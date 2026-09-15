@@ -1,0 +1,304 @@
+---
+import { communities, filterCategories } from "../data/communities.js";
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A curated list of communities, meetups, and things to do across Chennai."
+    />
+    <title>Somewhere in Chennai</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+
+  <body>
+    <div class="sky-gradient" aria-hidden="true"></div>
+
+    <!-- ── Header ───────────────────────────────────────── -->
+    <header class="site-header">
+      <div class="header-left">
+        <h1 class="site-title">Somewhere in Chennai</h1>
+        <p class="site-tagline">
+          A curated list of communities, meetups, and things to do across the city.
+        </p>
+      </div>
+      <nav class="header-nav" aria-label="Site navigation">
+        <button class="nav-btn" id="about-btn">About</button>
+        <button class="nav-btn is-solid" id="submit-btn">Submit</button>
+      </nav>
+    </header>
+
+    <!-- ── Filter pills ─────────────────────────────────── -->
+    <nav class="filter-bar" aria-label="Filter by category">
+      {filterCategories.map((cat, i) => (
+        <button
+          class={`filter-btn${i === 0 ? " is-active" : ""}`}
+          data-filter={cat === "All" ? "all" : cat}
+        >
+          {cat}
+        </button>
+      ))}
+    </nav>
+
+    <!-- ── Community table ──────────────────────────────── -->
+    <main>
+      <div class="community-table">
+        <div class="table-head">
+          <div class="cell cell-num" aria-hidden="true"></div>
+          <div class="cell" style="width: var(--col-name); flex-shrink: 0;" data-sort="name">
+            <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
+            Community
+          </div>
+          <div class="cell cell-description" data-sort="description">
+            <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
+            What Happens
+          </div>
+          <div class="cell cell-category" data-sort="category">
+            <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
+            Category
+          </div>
+          <div class="cell cell-entry" data-sort="entry">
+            <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
+            Entry
+          </div>
+          <div class="cell cell-freq" data-sort="freq">
+            <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
+            Frequency
+          </div>
+        </div>
+
+        {
+          communities.map((community, index) => (
+            <div
+              class="community-row"
+              data-categories={community.categories.join(",")}
+              data-link={community.link}
+              role={community.link ? "link" : undefined}
+              tabindex={community.link ? 0 : undefined}
+            >
+              <div class="cell cell-num">{String(index + 1).padStart(2, "0")}</div>
+              <div class="cell cell-name">{community.name}</div>
+              <div class="cell cell-description">{community.description}</div>
+              <div class="cell cell-category">{community.categories.join(", ")}</div>
+              <div class="cell cell-entry">{community.entry}</div>
+              <div class="cell cell-freq">{community.frequency}</div>
+            </div>
+          ))
+        }
+      </div>
+    </main>
+
+    <!-- ── Footer ───────────────────────────────────────── -->
+    <footer class="site-footer">
+      <span>Last updated 6 Jun, 2026</span>
+      <span>Designed by Harsha, Built using Claude Code</span>
+    </footer>
+
+    <!-- ── About envelope ─────────────────────────────────── -->
+    <div class="envelope-overlay" id="about-overlay" role="dialog" aria-modal="true" aria-label="About this site">
+      <div class="envelope-scene">
+        <button class="envelope-x" id="envelope-x" aria-label="Close">✕</button>
+
+        <!-- Photos peek out behind the letter -->
+        <div class="env-photo env-photo-left"></div>
+        <div class="env-photo env-photo-right"></div>
+
+        <!-- Letter in front -->
+        <div class="envelope-letter">
+          <p>Whether you're new to a city, or lived their all your life, it's never easy to meet people who resonates with you and share your interests. So I hope that you'll find something interesting here, so it can make your weekends a little exciting.</p>
+          <p>The list currently consists of communities and meetups I've personally attended / heard first-hand experiences in my friends' circle. I'm planning to keep the list updated, so please feel free to submit if you know any.</p>
+          <p>Please reach out to @harshajayram to share your feedback.</p>
+          <p class="letter-sign">- Harsha</p>
+        </div>
+
+        <!-- Flap — open, sits behind everything sliding out -->
+        <div class="envelope-flap"></div>
+
+        <!-- Envelope body — stays fixed, covers the bottoms -->
+        <div class="envelope-body">
+          <svg class="envelope-folds" viewBox="0 0 560 280" preserveAspectRatio="none" aria-hidden="true">
+            <!-- Fold crease marks — barely-visible highlights where paper catches light -->
+            <line x1="0"   y1="0"   x2="262" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
+            <line x1="560" y1="0"   x2="298" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
+            <line x1="0"   y1="280" x2="262" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
+            <line x1="560" y1="280" x2="298" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
+            <line x1="262" y1="120" x2="298" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Submit modal ─────────────────────────────────── -->
+    <dialog class="modal" id="submit-modal">
+      <button class="modal-close" data-close aria-label="Close">✕</button>
+      <h2 class="modal-title">Submit a community</h2>
+      <p class="modal-subtitle">Know anything I missed?</p>
+      <form id="submit-form">
+        <div class="form-field">
+          <label class="form-label" for="f-name">Community Name</label>
+          <input class="form-input" id="f-name" name="name" type="text" placeholder="Ex: Bessy Reads" required />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-desc">Description</label>
+          <textarea class="form-textarea" id="f-desc" name="description" placeholder="This community is about..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label" for="f-entry">Entry</label>
+            <input class="form-input" id="f-entry" name="entry" type="text" placeholder="Free" />
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="f-link">Social Link</label>
+            <input class="form-input" id="f-link" name="social" type="text" placeholder="Ex: instagram.com/bessyreads" />
+          </div>
+        </div>
+        <button class="form-submit" type="submit">Submit</button>
+        <p class="form-status" id="form-status"></p>
+      </form>
+    </dialog>
+
+    <!-- ── Interactions ─────────────────────────────────── -->
+    <script>
+      const SHEET_ENDPOINT = "";
+
+      // Tag each row with its original position so we can reset later
+      const rows = Array.from(document.querySelectorAll(".community-row"));
+      rows.forEach((row, i) => { row.dataset.originalIndex = String(i); });
+
+      // ── Shared filter/renumber ────────────────────────────
+      function applyFilter() {
+        const activeBtn = document.querySelector(".filter-btn.is-active");
+        const filter = activeBtn ? activeBtn.dataset.filter : "all";
+        let n = 0;
+        document.querySelectorAll(".community-row").forEach((row) => {
+          const cats = row.dataset.categories.split(",");
+          const show = filter === "all" || cats.includes(filter);
+          row.hidden = !show;
+          if (show) {
+            n += 1;
+            row.querySelector(".cell-num").textContent = String(n).padStart(2, "0");
+          }
+        });
+      }
+
+      // ── Filter pills ──────────────────────────────────────
+      document.querySelectorAll(".filter-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("is-active"));
+          btn.classList.add("is-active");
+          applyFilter();
+        });
+      });
+
+      // ── Column sort ───────────────────────────────────────
+      const SORT_CELL = {
+        name:        ".cell-name",
+        description: ".cell-description",
+        category:    ".cell-category",
+        entry:       ".cell-entry",
+        freq:        ".cell-freq",
+      };
+
+      const ARROW_UP   = "M8 3v10M4 7l4-4 4 4";
+      const ARROW_DOWN = "M8 3v10M4 9l4 4 4-4";
+
+      let sortCol = null;
+      let sortDir = "asc";
+
+      document.querySelectorAll(".table-head .cell[data-sort]").forEach((header) => {
+        header.addEventListener("click", () => {
+          const col = header.dataset.sort;
+
+          if (sortCol === col) {
+            sortDir = sortDir === "asc" ? "desc" : "asc";
+          } else {
+            sortCol = col;
+            sortDir = "asc";
+          }
+
+          // Reset all headers, then mark the active one
+          document.querySelectorAll(".table-head .cell[data-sort]").forEach((h) => {
+            h.classList.remove("is-sorted-asc", "is-sorted-desc");
+            h.querySelector(".cell-sort-icon path").setAttribute("d", ARROW_UP);
+          });
+          header.classList.add(sortDir === "asc" ? "is-sorted-asc" : "is-sorted-desc");
+          header.querySelector(".cell-sort-icon path").setAttribute("d", sortDir === "asc" ? ARROW_UP : ARROW_DOWN);
+
+          // Reorder rows
+          const allRows = Array.from(document.querySelectorAll(".community-row"));
+          const sel = SORT_CELL[sortCol];
+          allRows.sort((a, b) => {
+            const av = a.querySelector(sel).textContent.trim().toLowerCase();
+            const bv = b.querySelector(sel).textContent.trim().toLowerCase();
+            const cmp = av.localeCompare(bv);
+            return sortDir === "asc" ? cmp : -cmp;
+          });
+          const parent = allRows[0].parentNode;
+          allRows.forEach((row) => parent.appendChild(row));
+
+          applyFilter();
+        });
+      });
+
+      // ── Row click → link ──────────────────────────────────
+      rows.forEach((row) => {
+        const go = () => {
+          const link = row.dataset.link;
+          if (link) window.open(link, "_blank", "noopener");
+        };
+        row.addEventListener("click", go);
+        row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+      });
+
+      // ── About envelope ────────────────────────────────────
+      const aboutOverlay = document.getElementById("about-overlay");
+      const closeAbout = () => {
+        aboutOverlay.classList.remove("is-open");
+        document.body.style.overflow = "";
+      };
+      document.getElementById("about-btn").addEventListener("click", () => {
+        aboutOverlay.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+      });
+      aboutOverlay.addEventListener("click", (e) => { if (e.target === aboutOverlay) closeAbout(); });
+      document.getElementById("envelope-x").addEventListener("click", closeAbout);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && aboutOverlay.classList.contains("is-open")) closeAbout();
+      });
+
+      // ── Submit modal ──────────────────────────────────────
+      const submitModal = document.getElementById("submit-modal");
+      document.getElementById("submit-btn").addEventListener("click", () => submitModal.showModal());
+      document.querySelectorAll("dialog.modal").forEach((dialog) => {
+        dialog.querySelector("[data-close]").addEventListener("click", () => dialog.close());
+        dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+      });
+
+      // ── Submit form ───────────────────────────────────────
+      const form = document.getElementById("submit-form");
+      const status = document.getElementById("form-status");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!SHEET_ENDPOINT) {
+          status.textContent = "Submissions aren't wired up yet — coming soon!";
+          return;
+        }
+        status.textContent = "Sending...";
+        try {
+          const data = new FormData(form);
+          await fetch(SHEET_ENDPOINT, { method: "POST", mode: "no-cors", body: data });
+          status.textContent = "Thank you! I'll take a look soon.";
+          form.reset();
+        } catch {
+          status.textContent = "Something went wrong — please try again.";
+        }
+      });
+    </script>
+  </body>
+</html>
