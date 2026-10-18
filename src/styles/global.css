@@ -4,16 +4,30 @@
 
 /* ─── Design Tokens ─────────────────────────────────────── */
 :root {
-  --bg:           #F8F8F8;
-  --text:         #292929;
-  --text-muted:   #6E6E68;
+  --bg:           #FFFFFF;  /* Figma 846:2 */
+  --text:         #343434;  /* Figma */
+  --text-muted:   #636363;  /* Figma */
   --border:       #C9C9C4;
-  --row-hover:    rgba(41, 41, 41, 0.05);
+  --row-hover:    rgba(41, 41, 41, 0.027);
 
   --font-sans:    "Geist Variable", system-ui, sans-serif;
   --font-mono:    "Geist Mono Variable", monospace;
   --font-display: "Fraunces Variable", Georgia, serif;
 
+  /* Shared so the hero wash and the Submit button's ink can't drift */
+  --sky-reach:    948px;
+
+  /* Sampled down the middle of Figma node 846:2. Purely vertical — every row
+     of that frame is uniform across its width — so unlike the previous hero
+     there's no horizontal tint and no mask; the ramp lands on --bg itself. */
+  --sky-tint: linear-gradient(
+    to bottom,
+    #edf561 0.0%,
+    #edf561 3.53%,
+    #d1f1fd 20.07%,
+    #f7fcfe 32.79%,
+    var(--bg) 100%
+  );
   --page-pad:     56px;
   --col-num:      112px;
   --col-name:     300px;
@@ -29,6 +43,7 @@
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
+  background-color: var(--bg);
 }
 
 html, body {
@@ -36,17 +51,56 @@ html, body {
 }
 
 body {
-  background-color: var(--bg);
+  /* Transparent, not var(--bg): the page colour lives on <html> so the
+     .sky-gradient band behind body stays visible. */
+  background-color: transparent;
   color: var(--text);
   font-family: var(--font-sans);
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  position: relative;   /* the containing block for .sky-clip */
 }
 
-/* ─── Sky gradient (disabled — plain bg for now) ─────── */
+/* Clips the hero band to the page. The band is a fixed 948px tall; on its
+   own it extended the document past the footer whenever the list was
+   short. The wrapper takes the band's place in the stacking order. */
+.sky-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* The WebGL band that the cursor shoves around. Same stacking layer as
+   .sky-gradient but later in the DOM, so it covers the CSS wash and sits under
+   the content. Removed outright if WebGL is unavailable, leaving the CSS
+   version visible. */
+.sky-push {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--sky-reach);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ─── Hero gradient ──────────────────────────────────────── */
+/* The band is just --sky-tint, a vertical ramp sampled from Figma node 846:2.
+   No mask and no opacity: the ramp already ends on --bg, and the sampled
+   colours are the rendered ones. Absolute, not fixed, so it scrolls away with
+   the hero. */
 .sky-gradient {
-  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--sky-reach);
+  z-index: -1;
+  pointer-events: none;
+  background: var(--sky-tint);
 }
 
 a {
@@ -74,17 +128,36 @@ button {
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 600;
-  font-variation-settings: "opsz" 100, "SOFT" 100, "WONK" 1;
-  font-size: 96px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  margin-bottom: 16px;
+  /* Figma 956:142 sets SOFT and WONK only; opsz follows the size, as it
+     does there. */
+  font-variation-settings: "SOFT" 100, "WONK" 1;
+  font-optical-sizing: auto;
+  /* Two lines by design, with a hard break in the markup; neither line may
+     wrap further. 64px is the design size at 1440, and the ceiling is the
+     widest the longer line ("But the secret third thing.", 11.22× its font
+     size in this face, measured in the browser) can be and still share the
+     row with the 92px nav, a 24px gap and the 56px gutters, with 5% to
+     spare. 64px clears it from 984px up, so on the desktop row it's always
+     the design size. */
+  font-size: min(64px, calc(8.47vw - 19.31px));
+  white-space: nowrap;
+  line-height: 1.1;    /* Figma 956:142 */
+  letter-spacing: 0;   /* Figma: 0% — the old -0.02em was squishing it */
+  /* Optical alignment: measured from pixels, the italic N and B start
+     within half a pixel of the tagline's A, so no correction is needed. The
+     old "Chennai…" title needed -0.057em for its C. Re-measure if the first
+     letters change. */
+  margin-left: 0;
+  margin-bottom: 18px; /* Figma 956:141 gap */
 }
 
 .site-tagline {
-  font-size: 1.25rem;
+  /* 20px at 1440 down to the tablet's 16px at 744 */
+  font-size: clamp(16px, calc(0.5747vw + 11.72px), 20px);
+  /* Figma wraps this to two lines rather than letting it run the page width */
+  max-width: 652px;   /* Figma 956:143 */
   color: var(--text);
-  line-height: 1;
+  line-height: 1.5;   /* Figma: same ratio at every size */
 }
 
 .header-nav {
@@ -112,10 +185,35 @@ button {
   transition: background-color 120ms ease, color 120ms ease;
 }
 
+/* The Submit label is a window onto the hero wash: the same gradient, shifted
+   into page coordinates so the letters show exactly what sits behind them.
+   Needs its own element — background-clip: text on the button would clip the
+   button's fill away too. The offset is set in the inline script. */
+.btn-ink {
+  display: inline-block;
+  background-image: var(--sky-tint);
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .nav-btn:hover,
 .nav-btn.is-solid {
   background-color: var(--text);
   color: var(--bg);
+}
+
+/* About's label is the same window onto the wash, but only once the button
+   fills on hover; at rest it's plain text. */
+.btn-ink.is-hover-only {
+  background-image: none;
+  color: var(--text);
+}
+
+.nav-btn:hover .btn-ink.is-hover-only {
+  background-image: var(--sky-tint);
+  color: transparent;
 }
 
 /* ─── Filter pills ───────────────────────────────────────── */
@@ -149,22 +247,43 @@ button {
   background-color: var(--text);
   border-color: var(--text);
   border-style: solid;
-  color: #F8F8F8;
+  color: var(--bg);
 }
 
 /* ─── Table ──────────────────────────────────────────────── */
 main {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   flex: 1 0 auto;
   padding-bottom: 64px;
 }
 
+/* One grid for the whole table; head and rows adopt its columns via subgrid.
+   Tracks are the Figma column widths as ratios (112/300/468/192/188/180 of
+   1440), so they keep the design's proportions at any width instead of one
+   column swallowing the slack. min-width pins them to the design's actual
+   pixels — below 1440 the table scrolls rather than squeezing, which is what
+   the tablet frame does too.
+
+   minmax(0, …) is load-bearing: an fr track's default floor is min-content,
+   and with nowrap text that's the whole string, which would blow the ratios
+   apart on the longest description. */
 .community-table {
-  min-width: 1100px;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 112fr)
+    minmax(0, 300fr)
+    minmax(0, 468fr)
+    minmax(0, 192fr)
+    minmax(0, 188fr)
+    minmax(0, 180fr);
+  min-width: 1440px;
 }
 
 .table-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: center;
   border-bottom: 1px dashed var(--text);
 }
@@ -198,6 +317,12 @@ main {
   height: 11px;
   flex-shrink: 0;
   opacity: 0.5;
+  /* Optical alignment: the arrow's ink starts 2.5px into its box, the body
+     text's stems (F, P, L, B, H, M) 1.5px into theirs — measured from
+     pixels in every column. Pulling the icon back 1px puts the arrow on the
+     same line as the column's text. Round letters (C, S) and diagonals
+     (A, W) sit a fraction either side of that line, as type does. */
+  margin-left: -1px;
 }
 
 .table-head .cell[data-sort] {
@@ -212,19 +337,36 @@ main {
 
 /* ─── Rows ───────────────────────────────────────────────── */
 .community-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: center;
   border-bottom: 1px dashed var(--text);
   transition: background-color 100ms ease;
 }
 
+.community-row:hover {
+  background-color: var(--row-hover);
+}
+
+/* The row's content eases a few pixels to the right on hover. Guarded by
+   `hover: hover` so a tap on a touch screen doesn't leave it nudged, and
+   dropped under reduced-motion — the background fade carries it alone. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .cell {
+    transition: transform 240ms cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+
+  .community-row:hover .cell {
+    transform: translateX(4.5px);
+  }
+}
+
+
 .community-row[data-link]:not([data-link=""]) {
   cursor: pointer;
 }
 
-.community-row:hover {
-  background-color: var(--row-hover);
-}
 
 .community-row[hidden] {
   display: none;
@@ -236,52 +378,46 @@ main {
 
 .cell {
   padding: 16px 20px;
+  /* One line per row. At or above 1440 the design's columns fit every value,
+     and below that the table scrolls rather than shrinking — so the ellipsis
+     is a guard against an unusually long entry, not the normal case. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell-num {
-  width: var(--col-num);
-  flex-shrink: 0;
   font-family: var(--font-mono);
   font-size: 1rem;
   letter-spacing: 0.04em;
   color: var(--text);
 }
 
+/* Category / entry / frequency, collapsed onto one line. Phone layout only. */
+.cell-meta {
+  display: none;
+}
+
 .cell-name {
-  width: var(--col-name);
-  flex-shrink: 0;
   font-size: 1rem;
   font-weight: 500;
 }
 
 .cell-description {
-  flex: 3 0 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: 1rem;
   color: var(--text);
 }
 
 .cell-category {
-  flex: 1 0 0;
-  min-width: 0;
   font-size: 1rem;
 }
 
 .cell-entry {
-  flex: 1 0 0;
-  min-width: 0;
   font-size: 1rem;
-  white-space: nowrap;
 }
 
 .cell-freq {
-  flex: 1 0 0;
-  min-width: 0;
   font-size: 1rem;
-  white-space: nowrap;
 }
 
 /* ─── Footer ─────────────────────────────────────────────── */
@@ -300,52 +436,67 @@ main {
 }
 
 /* ─── Modals ─────────────────────────────────────────────── */
+/* Submit dialog, from Figma node 906:5559. Every value below is measured:
+   590×464 at 24px/28px padding, and the scrim solved from the render at
+   rgba(42 42 42 / 0.4) — neutral, despite looking green over the hero.
+   Widths are capped rather than fixed so it holds together down to 320px. */
 dialog.modal {
   margin: auto;
   border: none;
-  border-radius: 10px;
-  background: #FCFCFB;
+  border-radius: 0;
+  background: #F8F8F8;
   color: var(--text);
-  width: min(420px, calc(100vw - 48px));
-  padding: 28px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  width: min(590px, calc(100vw - 48px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 28px 24px 24px;
 }
 
 dialog.modal::backdrop {
-  background: rgba(15, 15, 14, 0.45);
+  background: rgb(42 42 42 / 0.4);
 }
 
-.modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  color: var(--text-muted);
-  transition: color 100ms ease;
+/* Opening mirrors the close: the card fades in rising 6px, the scrim fades
+   in under it. Fill is `backwards`, never `both`: a translate animation that
+   stays filled after it ends makes the dialog the containing block for
+   position:fixed children, and the Entry dropdown — fixed, positioned in
+   viewport coordinates — then lands offset by the dialog's corner and gets
+   clipped out of sight. */
+dialog.modal[open] {
+  animation: dialog-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
-.modal-close:hover {
-  color: var(--text);
+dialog.modal[open]::backdrop {
+  animation: letter-fade 200ms ease both;
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; translate: 0 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.modal[open],
+  dialog.modal[open]::backdrop {
+    animation: none;
+  }
 }
 
 .modal-title {
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: 498;
-  font-variation-settings: "opsz" 40, "SOFT" 100, "WONK" 0.36;
-  font-size: 1.5rem;
-  margin-bottom: 6px;
+  font-weight: 600;
+  font-variation-settings: "opsz" 100, "SOFT" 100, "WONK" 1;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 12px;
 }
 
 .modal-subtitle {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1;
+  color: #525252;
+  margin-bottom: 32px;
 }
 
 .modal-body p {
@@ -360,39 +511,45 @@ dialog.modal::backdrop {
 
 /* Form */
 .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
 .form-row {
   display: flex;
-  gap: 14px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .form-row .form-field {
-  flex: 1;
+  flex: 1 0 0;
+  min-width: 0;
+  margin-bottom: 0;
 }
 
 .form-label {
-  display: block;
   font-family: var(--font-mono);
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
   text-transform: uppercase;
-  color: var(--text);
-  margin-bottom: 6px;
+  color: #757575;
 }
 
 .form-input,
 .form-textarea {
   width: 100%;
   font-family: var(--font-sans);
-  font-size: 0.8125rem;
+  font-size: 14px;
+  line-height: 1;
   color: var(--text);
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  padding: 9px 8px;
   outline: none;
   transition: border-color 100ms ease;
 }
@@ -404,26 +561,28 @@ dialog.modal::backdrop {
 
 .form-input::placeholder,
 .form-textarea::placeholder {
-  color: #ABABA5;
+  color: #B2B2B2;
 }
 
 .form-textarea {
-  min-height: 84px;
+  height: 95px;
+  line-height: 1.4;
   resize: vertical;
 }
 
 .form-submit {
   width: 100%;
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  line-height: 1;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   background-color: var(--text);
-  color: #FFFFFF;
-  border-radius: 100px;
-  padding: 10px;
-  margin-top: 4px;
+  color: #F8F8F8;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-top: 16px;   /* 16 here + 16 from the row above = the 32px in Figma */
   transition: opacity 120ms ease;
 }
 
@@ -431,168 +590,807 @@ dialog.modal::backdrop {
   opacity: 0.85;
 }
 
+/* Entry is multi-select — an entry can be "Free, Paid". The trigger reuses
+   .form-input so it matches Social Link exactly, with a chevron added. */
+.multiselect {
+  position: relative;
+}
+
+.multiselect-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.multiselect-value {
+  flex: 1 0 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multiselect-value.is-empty {
+  color: #B2B2B2;          /* reads as the placeholder until something is picked */
+}
+
+.multiselect-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #757575;
+  transition: transform 140ms ease;
+}
+
+.multiselect.is-open .multiselect-chevron {
+  transform: rotate(180deg);
+}
+
+.multiselect-menu {
+  position: fixed;   /* not absolute: the dialog scrolls and would clip it */
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  background: var(--bg);
+  box-shadow: 0 8px 24px rgb(42 42 42 / 0.12);
+}
+
+.multiselect-menu[hidden] {
+  display: none;
+}
+
+.multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1;
+  text-align: left;
+  color: var(--text);
+  transition: background-color 100ms ease;
+}
+
+.multiselect-option:hover {
+  background-color: var(--row-hover);
+}
+
+.multiselect-tick {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  /* Pushed right, so an unticked row doesn't leave a hole on the left */
+  margin-left: auto;
+  opacity: 0;
+}
+
+.multiselect-option[aria-selected="true"] .multiselect-tick {
+  opacity: 1;
+}
+
+/* Below this the two side-by-side fields get too narrow to type into —
+   not in the Figma frame, which only covers 1440. */
+@media (max-width: 420px) {
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+/* Collapses when there's no message — otherwise it reserves a line plus its
+   margin under the button, which reads as too much bottom padding. */
+.form-status:empty {
+  display: none;
+}
+
 .form-status {
   font-size: 0.75rem;
   text-align: center;
   margin-top: 10px;
   color: var(--text-muted);
-  min-height: 1em;
 }
 
-/* ─── Envelope (About) ───────────────────────────────────── */
-.envelope-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 15, 14, 0.58);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 220ms ease;
+.footer-link {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--text-muted);
+  transition: text-decoration-color 120ms ease;
 }
 
-.envelope-overlay.is-open {
-  opacity: 1;
-  pointer-events: all;
+.footer-link:hover {
+  text-decoration-color: var(--text);
 }
 
-.envelope-scene {
-  position: relative;
-  width: 560px;
-  height: 540px;
-}
+/* ─── Letter (About) ─────────────────────────────────────── */
+/* Figma 967:595: an A4 sheet, 480 × 679, square to the page (Harsha took
+   the design's 4° tilt off). Polaroids top-left, a
+   Fraunces greeting, body copy, and Harsha's signature bottom-right, which
+   signs itself once the letter is open. It opens as a trifold: the top
+   panel swings down, then the bottom panel swings up.
 
-.envelope-x {
-  position: absolute;
-  top: -36px;
-  right: 0;
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1;
-  transition: color 100ms ease;
-  z-index: 10;
-}
+   Measurements are the design's, as fractions of the 480 width so a smaller
+   sheet keeps its proportions: 40px side margins (8.333%), 32px head
+   (6.667%), creases at 236 and 443. Body copy sits on a 22.4px rhythm
+   (14px × 1.6) with one empty line between paragraphs, as in the design.
 
-.envelope-x:hover {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* Photos — slide up behind the letter, peek above envelope opening */
-.env-photo {
-  position: absolute;
-  width: 190px;
-  height: 230px;
-  background: #E4DFD6;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 10px;
-  font-family: var(--font-mono);
-  font-size: 0.5rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #A8A39A;
-  transform: translateY(340px);
-  transition: transform 820ms cubic-bezier(0.16, 1, 0.3, 1) 40ms;
-}
-
-.env-photo::after {
-  content: 'photo';
-}
-
-.env-photo-left {
-  left: 16px;
-  top: 148px;
-  rotate: -9deg;
-  z-index: 2;
-}
-
-.env-photo-right {
-  right: 16px;
-  top: 158px;
-  rotate: 7deg;
-  z-index: 3;
-}
-
-.envelope-overlay.is-open .env-photo {
-  transform: translateY(0);
-}
-
-/* Letter — slides up in front of photos and flap */
-.envelope-letter {
-  position: absolute;
-  top: 20px;
-  left: 56px;
-  right: 56px;
-  background: #FDFAF4;
-  padding: 28px 28px 32px;
-  z-index: 4;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(320px);
-  transition: transform 750ms cubic-bezier(0.16, 1, 0.3, 1) 80ms;
-}
-
-.envelope-overlay.is-open .envelope-letter {
-  transform: translateY(0);
-  transition: transform 180ms ease-out;
-}
-
-.envelope-overlay.is-open .envelope-letter:hover {
-  transform: translateY(-24px);
-}
-
-.envelope-letter p {
-  font-size: 0.875rem;
-  line-height: 1.7;
+   Each panel is a hinge (3D, preserve-3d) holding two faces: the front clips
+   its own copy of the sheet, shifted so the three tile it; the back is plain
+   paper, pre-rotated 180° so it's what you see while the panel is folded
+   over. The faces, not the hinge, hide their backfaces — overflow:hidden on
+   the hinge would flatten its 3D context and the mirrored text would show
+   through the fold. */
+dialog.letter-dialog {
+  margin: auto;
+  border: none;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+  max-width: none;
+  max-height: none;
+  /* Capped by height too, so a short laptop viewport gets a smaller sheet
+     rather than one that runs off the screen. */
+  width: min(480px, 100vw - 40px, (100dvh - 72px) / 1.4142);
   color: var(--text);
-  margin-bottom: 10px;
 }
 
-.envelope-letter p:last-child {
-  margin-bottom: 0;
+/* showModal() focuses the dialog itself (nothing inside is focusable), and
+   a focus ring around an invisible box behind a tilted sheet looks like a
+   glitch. Esc still works; focus is only ever here. */
+dialog.letter-dialog:focus-visible {
+  outline: none;
 }
 
-.letter-sign {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 400;
-  font-variation-settings: "opsz" 40, "SOFT" 100, "WONK" 0;
-  font-size: 1.0625rem;
-  line-height: 1.5;
-  margin-top: 14px !important;
+dialog.letter-dialog::backdrop {
+  background: rgb(42 42 42 / 0.4);
 }
 
-/* Flap — open, apex at top of scene, base meets envelope opening */
-.envelope-flap {
+dialog.letter-dialog[open]::backdrop {
+  animation: letter-fade 200ms ease both;
+}
+
+.letter {
+  --sheet-h: 679px;            /* A4 at 480 wide; overwritten on open */
+  --paper: #FCFCFC;
+  /* Paper grain: fractal noise lit as a surface, so it reads as pressed
+     fibre rather than speckle (after Plum's founders' letter). The light is
+     mapped to a narrow band around 1.0 so, multiplied over --paper, it only
+     ever shades the sheet by a few percent — measured from rendered pixels:
+     mean ≈ 243 (about #F4F4F4, Plum's off-white), sd ≈ 4. Tune against a
+     render, not an offscreen canvas: the filter runs at device resolution
+     and comes out a few points darker on a 2× screen. A second, much
+     larger noise adds faint cloudy mottling. Generated, tileable
+     (stitchTiles), no download. */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='1.3'%3E%3CfeDistantLight azimuth='235' elevation='68'/%3E%3C/feDiffuseLighting%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0.2' intercept='0.83'/%3E%3CfeFuncG type='linear' slope='0.2' intercept='0.83'/%3E%3CfeFuncB type='linear' slope='0.2' intercept='0.83'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --paper-mottle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='m' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.006 0.009' numOctaves='4' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.45 0 0 0 0 0.4 0 0 0 0 0.3 0.035 0 0 0 -0.008'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+  --ink: #214E81;              /* the ballpoint blue, sampled from the core of
+                                  the photographed ink (Figma 978:14) */
+  position: relative;
+  height: var(--sheet-h);
+  perspective: 1400px;
+  transform-style: preserve-3d;
+  /* One drop shadow for the whole sheet. Per-panel shadows let the top
+     panel's shadow fall across the panel below at rest, which drew a hard
+     edge at the crease and made it read as two stacked sheets. */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 12px 32px -8px rgba(0, 0, 0, 0.22);
+}
+
+/* The drop shadow is the size of the open sheet, so it waits for the
+   panels: shown from the start it outlined the whole letter around the
+   folded one, a ghost of the sheet before it had opened. It fades in as
+   the bottom panel comes down. */
+dialog.letter-dialog[open] .letter {
+  animation:
+    letter-fade 220ms ease both,
+    letter-shadow 600ms ease-out 620ms both;
+}
+
+@keyframes letter-shadow {
+  from { box-shadow: 0 1px 2px rgba(0, 0, 0, 0), 0 12px 32px -8px rgba(0, 0, 0, 0); }
+}
+
+/* Closing: quick and quiet — the sheet fades and drops 6px, the scrim
+   fades with it. The script calls close() when dialog-out ends. */
+dialog.letter-dialog.is-closing,
+dialog.modal.is-closing {
+  animation: dialog-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+dialog.letter-dialog.is-closing::backdrop,
+dialog.modal.is-closing::backdrop {
+  animation: dialog-out-scrim 180ms ease-in forwards;
+}
+
+@keyframes dialog-out {
+  to { opacity: 0; translate: 0 6px; }
+}
+
+@keyframes dialog-out-scrim {
+  to { opacity: 0; }
+}
+
+.letter-panel {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-left: 280px solid transparent;
-  border-right: 280px solid transparent;
-  border-bottom: 260px solid #3D3830;
-  z-index: 1;
-}
-
-/* Envelope body — flat top, diamond fold lines on front face */
-.envelope-body {
-  position: absolute;
-  bottom: 0;
   left: 0;
   right: 0;
-  height: 280px;
-  background: linear-gradient(to bottom, #353230 0%, #2A2826 38%, #1C1A18 100%);
-  border-radius: 0 0 12px 12px;
-  z-index: 5;
+  top: calc(var(--sheet-h) * var(--f));
+  height: calc(var(--sheet-h) * (var(--g) - var(--f)));
+  transform-style: preserve-3d;
+}
+
+.letter-face,
+.letter-back {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  backface-visibility: hidden;
+}
+
+/* The grain sits on the sheet, not the panel, so the three shifted copies
+   line up and the texture runs unbroken across the folds. */
+.letter-sheet,
+.letter-back {
+  background-color: var(--paper);
+  background-image: var(--paper-mottle), var(--paper-grain);
+  background-size: 600px 600px, 300px 300px;
+  background-blend-mode: normal, multiply;
+}
+
+.letter-face {
   overflow: hidden;
 }
 
-.envelope-folds {
+.letter-back {
+  transform: rotateX(180deg);
+}
+
+.letter-sheet {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: calc(-1 * var(--sheet-h) * var(--f));
+  padding: 6.667% 8.333% 8.333%;   /* 32 / 40 / 40 at 480 */
+}
+
+/* Shade that lifts as the panel opens — the paper reads as catching light.
+   ::after, so it paints over both faces (coplanar siblings paint in DOM
+   order); no backface rule, so it shades the back too. */
+.letter-panel::after {
+  content: "";
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.22);
+  opacity: 0;
 }
+
+/* The creases, as valley folds lit from above. Paper that's been folded
+   and opened doesn't lie flat: above each crease the sheet slopes down into
+   it and faces away from the light, so it shades gradually toward the fold;
+   the fold itself is a soft dark hairline; just below, the paper turns back
+   up toward the light and catches a thin highlight before settling. (The
+   design's flat 4px #F5F5F5 band was replaced with this, on Harsha's ask
+   for a more realistic fold.) Panel faces clip, so each half of a crease is
+   drawn on its own side: the shade at the bottom of the panel above, the
+   hairline and highlight at the top of the panel below. */
+.letter-panel-0 .letter-face::before,
+.letter-panel-1 .letter-face::before,
+.letter-panel-1 .letter-face::after,
+.letter-panel-2 .letter-face::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* One continuous profile across each crease, split at the fold because the
+   faces clip: both halves meet at the same 2.6% shade, so there's no step
+   at the fold line — the step is what made earlier versions read as two
+   separate sheets. Above, a slow slope into shade; below, a quicker rise
+   out of it into a faint catch of light, then flat paper. */
+.letter-panel-0 .letter-face::before,
+.letter-panel-1 .letter-face::before {
+  bottom: 0;
+  height: 28px;
+  background: linear-gradient(to top,
+    rgba(40, 32, 20, 0.026) 0,
+    rgba(40, 32, 20, 0.012) 8px,
+    rgba(40, 32, 20, 0.003) 18px,
+    rgba(40, 32, 20, 0) 28px);
+}
+
+.letter-panel-1 .letter-face::after,
+.letter-panel-2 .letter-face::after {
+  top: 0;
+  height: 22px;
+  background: linear-gradient(to bottom,
+    rgba(40, 32, 20, 0.026) 0,
+    rgba(40, 32, 20, 0.006) 3px,
+    rgba(255, 255, 255, 0.28) 6px,
+    rgba(255, 255, 255, 0.12) 12px,
+    rgba(255, 255, 255, 0) 22px);
+}
+
+
+/* Hinges. Top panel folds down over the middle (origin at its bottom edge);
+   bottom panel folds up (origin at its top edge). translateZ keeps them in
+   front of the middle while folded — the order a C-fold closes in. */
+.letter-panel-0 {
+  transform-origin: 50% 100%;
+  transform: translateZ(1px);
+}
+
+.letter-panel-2 {
+  transform-origin: 50% 0;
+  transform: translateZ(0.5px);
+}
+
+dialog.letter-dialog[open] .letter-panel-0 {
+  animation: letter-unfold-top 760ms cubic-bezier(0.3, 0.9, 0.3, 1) 160ms both;
+}
+
+dialog.letter-dialog[open] .letter-panel-2 {
+  animation: letter-unfold-bottom 760ms cubic-bezier(0.3, 0.9, 0.3, 1) 440ms both;
+}
+
+dialog.letter-dialog[open] .letter-panel-0::after {
+  animation: letter-shade 760ms ease-out 160ms both;
+}
+
+dialog.letter-dialog[open] .letter-panel-2::after {
+  animation: letter-shade 760ms ease-out 440ms both;
+}
+
+@keyframes letter-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes letter-unfold-top {
+  from { transform: translateZ(1px) rotateX(-170deg); }
+  to   { transform: translateZ(1px) rotateX(0); }
+}
+
+@keyframes letter-unfold-bottom {
+  from { transform: translateZ(0.5px) rotateX(170deg); }
+  to   { transform: translateZ(0.5px) rotateX(0); }
+}
+
+@keyframes letter-shade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Photos — three polaroids stacked at the top-left, at the design's angles
+   and centres (Figma group 967:600). A polaroid is a white card, taller
+   than wide, with a square print and a deeper bottom border. On hover the
+   stack fans out into a straight row. The hover is on the group, and a
+   child counts as hovering its parent even where it sits outside the
+   parent's box, so the spread cards keep the row open without the group
+   needing to be row-sized. */
+.letter-photos {
+  --card: 88px;
+  position: relative;
+  height: 145px;               /* to the greeting at 177 */
+}
+
+.polaroid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--card);
+  margin: 0;
+  padding: 6px 6px 22px;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 8px -2px rgba(0, 0, 0, 0.04);
+  transition:
+    translate 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    rotate    520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.polaroid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #EEE;
+}
+
+.polaroid:nth-child(1) { translate: 5px 0;    rotate: -5.38deg; }
+.polaroid:nth-child(2) { translate: 28px 2px; rotate: 2.82deg; }
+.polaroid:nth-child(3) { translate: 52px 9px; rotate: 16.22deg; }
+
+/* Without hover, a tap fans them instead (.is-spread, toggled by the
+   script). */
+@media (hover: hover) {
+  .letter-photos:hover .polaroid {
+    rotate: 0deg;
+    transition-delay: 0ms;
+  }
+
+  /* Staggered so the fan reads as one gesture, not three jumps */
+  .letter-photos:hover .polaroid:nth-child(1) { translate: 0 4px; }
+  .letter-photos:hover .polaroid:nth-child(2) { translate: calc(var(--card) + 12px) 4px; transition-delay: 40ms; }
+  .letter-photos:hover .polaroid:nth-child(3) { translate: calc(2 * (var(--card) + 12px)) 4px; transition-delay: 80ms; }
+}
+
+@media (hover: none) {
+  .letter-photos {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .letter-photos.is-spread .polaroid {
+    rotate: 0deg;
+    transition-delay: 0ms;
+  }
+
+  .letter-photos.is-spread .polaroid:nth-child(1) { translate: 0 4px; }
+  .letter-photos.is-spread .polaroid:nth-child(2) { translate: calc(var(--card) + 12px) 4px; transition-delay: 40ms; }
+  .letter-photos.is-spread .polaroid:nth-child(3) { translate: calc(2 * (var(--card) + 12px)) 4px; transition-delay: 80ms; }
+}
+
+/* The letter's close button only shows on a phone (see the 600px block). */
+.letter-close {
+  display: none;
+}
+
+/* Figma 967:604 */
+.letter-greeting {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 498;
+  font-variation-settings: "SOFT" 100, "WONK" 0.36;
+  font-optical-sizing: auto;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.letter-body {
+  margin-top: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #525252;
+}
+
+.letter-body p {
+  margin-bottom: 1.6em;   /* one empty line between paragraphs */
+}
+
+.letter-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Signature — Figma puts it 12px under "With love," and 36px in from the
+   right margin. Drawn static: a live signing animation was tried and
+   dropped. */
+.letter-signature {
+  display: block;
+  width: auto;
+  height: 92px;               /* the signature runs on a steep diagonal, so
+                                 it's sized by height to sit at the same
+                                 visual weight as a line of the copy */
+  margin: 10px 11% 0 auto;
+  overflow: visible;
+}
+
+.letter-signature path {
+  stroke: var(--ink);
+  stroke-width: 19;           /* ≈1.75px at this size, the ballpoint's line */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.letter-dialog[open] .letter,
+  dialog.letter-dialog[open] .letter-panel-0,
+  dialog.letter-dialog[open] .letter-panel-2,
+  dialog.letter-dialog[open] .letter-panel-0::after,
+  dialog.letter-dialog[open] .letter-panel-2::after {
+    animation: none;
+  }
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+/* Three states, from three Figma frames: desktop 1440 (846:2), tablet 744
+   (906:2362) and phone 440 (892:229). The title and tagline are fluid rather
+   than stepped, so the hero doesn't jump as the window crosses a breakpoint.
+
+   Tablet keeps the desktop table and lets it scroll sideways; only the phone
+   restacks it into a list. */
+
+/* Tablet: the header stacks here, because the desktop row needs roughly
+   1080px before the 96px title and the nav stop competing. */
+@media (max-width: 1120px) {
+  :root {
+    --page-pad: 40px;
+  }
+
+  .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 48px var(--page-pad) 0;
+  }
+
+  .site-title {
+    /* Same cap, ceiling re-solved for 40px gutters and no nav on the row:
+       64px from 836 up, 56px at 744, 44px at 600. */
+    font-size: min(64px, calc(8.47vw - 6.78px));
+    margin-bottom: 12px;
+  }
+
+  .site-tagline {
+    max-width: 575px;   /* Figma 906:2362 */
+  }
+
+  .header-nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .nav-btn {
+    height: 32px;
+    min-width: 90px;
+    padding: 0 12px;
+    font-size: 1rem;
+  }
+
+  .filter-bar {
+    padding: 136px var(--page-pad) 32px;
+    gap: 8px;
+  }
+
+  .filter-btn {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --page-pad: 24px;
+    /* The phone hero is about half the desktop's height, so at the full
+       948px reach the tagline landed in the green. Shortening the band
+       compresses the whole ramp (stops, mask and veil are all fractions of
+       it) so the tagline sits in the same pale part of the ramp as it does
+       at 1440: from the cyan into the white, as there. 560 also works but
+       leaves the buttons on bare white. */
+    --sky-reach: 640px;
+    /* But the whole ramp squeezed into 640 stopped the wash at the buttons.
+       So the blue and near-white stops move too (RAMP_PHONE in the script):
+       the yellow-to-blue blend still ends above the tagline, and the blue
+       fades out slowly, down toward the pills. */
+    --sky-tint: linear-gradient(
+      to bottom,
+      #edf561 0.0%,
+      #edf561 3.53%,
+      #d1f1fd 15.6%,
+      #f7fcfe 53.1%,
+      var(--bg) 100%
+    );
+  }
+
+  /* Hero — title, tagline, then the two buttons */
+  .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 40px var(--page-pad) 0;
+  }
+
+  .site-tagline {
+    font-size: 15px;
+  }
+
+  .site-title {
+    /* The ceiling for 24px gutters: the widest the longer line can be and
+       still fit inside them with 5% to spare. Always the smaller term on a
+       phone, so this is simply the size. */
+    font-size: min(64px, calc(8.47vw - 4.07px));   /* 33px at 440, 23px at 320 */
+    margin-bottom: 8px;
+  }
+
+  .header-nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .nav-btn {
+    height: 32px;
+    min-width: 0;
+    padding: 0 12px;
+    font-size: 1rem;
+  }
+
+  #about-btn {
+    width: 90px;
+  }
+
+  /* The letter keeps its type size and proportional margins. The greeting
+     may wrap here, and the signature sits nearer the margin. The sheet is
+     taller than the screen, so the dialog becomes a full-screen scroller
+     with the letter inset in it: the strip above and below is scrim, and
+     a tap there closes it like the backdrop does. The close button sits
+     in the top strip and stays put as the letter scrolls under it. */
+  dialog.letter-dialog {
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 72px 16px 56px;
+  }
+
+  .letter-close {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Narrow phones: the fanned row of three has to fit inside the sheet's
+     margins (the sheet is 100vw - 32px, its copy 400/480 of that). */
+  .letter-photos {
+    --card: min(88px, ((100vw - 32px) * 0.8333 - 24px) / 3);
+  }
+
+  .letter-greeting {
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .letter-signature {
+    height: 84px;
+    margin-right: 4%;
+  }
+
+  .filter-bar {
+    padding: 160px var(--page-pad) 14px;   /* Harsha's mark, Figma 986:19 */
+    gap: 8px;
+  }
+
+
+
+  /* Table stacks instead of scrolling sideways */
+  main {
+    overflow-x: visible;
+  }
+
+  /* Drop the desktop grid — phone rows carry their own two-column layout */
+  .community-table {
+    display: block;
+    min-width: 0;
+  }
+
+  .table-head {
+    display: flex;
+  }
+
+  .table-head .cell-description,
+  .table-head .cell-category,
+  .table-head .cell-entry,
+  .table-head .cell-freq,
+  .community-row .cell-category,
+  .community-row .cell-entry,
+  .community-row .cell-freq {
+    display: none;
+  }
+
+  .table-head .cell {
+    padding: 14px 16px 14px var(--page-pad);
+  }
+
+  .table-head .cell-num {
+    width: 52px;   /* matches the rows' number column */
+  }
+
+  .cell-head-name {
+    width: auto;
+    flex: 1 0 0;
+    min-width: 0;
+    padding-right: var(--page-pad);
+  }
+
+  /* Same 16px inset as the row's name, so the arrow's ink lines up with
+     the names below (the icon's -1px does the rest, as on desktop). */
+  .table-head .cell-head-name {
+    padding-left: 16px;
+  }
+
+  /* Number in column one spanning all three lines of column two */
+  .community-row {
+    display: grid;
+    /* minmax(0, 1fr), not 1fr: a plain 1fr floors at min-content, and with
+       nowrap text that's the whole string — which is what made the page
+       scroll sideways. */
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  /* Desktop lets long values widen the table and scroll. A phone has nowhere
+     to scroll to, so here they truncate instead — as the Figma frame does. */
+  .cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cell-num {
+    grid-row: 1 / span 3;
+    width: auto;
+    /* No right padding: the 52px column is the 24px gutter plus the
+       numeral (~19px), and the gap to the name is its own 16px padding. */
+    padding: 18px 0 18px var(--page-pad);
+  }
+
+  .cell-name {
+    grid-column: 2;
+    width: auto;
+    padding: 18px var(--page-pad) 0 16px;
+  }
+
+  .cell-description {
+    grid-column: 2;
+    padding: 6px var(--page-pad) 0 16px;
+    font-size: 0.9375rem;   /* 15px */
+    line-height: 1.5;
+    /* Two lines, then the ellipsis: at 15px one line showed too little.
+       Two lines' room is always held, so a short description doesn't make
+       its row shorter than the rest; the meta line stays at the same
+       height in every row. */
+    min-height: calc(6px + 2lh);
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .cell-meta {
+    display: block;
+    grid-column: 2;
+    padding: 8px var(--page-pad) 18px 16px;
+    font-size: 0.9375rem;   /* 15px */
+    color: var(--text-muted);
+  }
+
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px var(--page-pad);
+  }
+}
+

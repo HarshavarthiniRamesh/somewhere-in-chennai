@@ -1,6 +1,60 @@
 ---
-import { communities, filterCategories } from "../data/communities.js";
+import { execSync } from "node:child_process";
+import { statSync } from "node:fs";
+import { communities, filterCategories, entryOptions } from "../data/communities.js";
 import "../styles/global.css";
+
+// The About letter is an A4 sheet folded in three. Each panel is a slice of
+// the same sheet, given as fractions of its height — the creases sit where
+// Figma 967:595 draws them, 236px and 443px down a 679px sheet, so the
+// middle panel is the short one. The sheet is rendered once per panel so
+// each can swing on its own hinge; only the first copy is exposed to
+// assistive tech.
+const letterFolds = [[0, 236 / 679], [236 / 679, 443 / 679], [443 / 679, 1]];
+
+// Harsha's signature as pen strokes, from a photo of the ink (Figma 978:14),
+// one path per stroke in the order Harsha marked on it (978:11). Rough
+// guide points were centred on the ink's cross-section and smoothed, so the
+// curves are clean rather than hand-jittered. Drawn static.
+const signaturePaths = `<path d="M16.3 646.1 C18.0 645.0 23.4 642.2 26.5 639.7 C29.7 637.3 32.8 634.7 35.2 631.5 C37.6 628.4 39.0 624.5 40.7 620.9 C42.4 617.3 43.6 613.4 45.6 610.0 C47.6 606.5 50.2 603.5 52.6 600.3 C55.0 597.1 57.5 594.0 59.8 590.7 C62.1 587.4 64.2 584.0 66.5 580.7 C68.7 577.4 71.0 574.1 73.3 570.8 C75.5 567.5 77.7 564.1 79.9 560.8 C82.2 557.5 84.4 554.2 86.7 550.9 C89.0 547.7 91.5 544.5 93.9 541.3 C96.3 538.1 98.8 535.0 101.2 531.8 C103.5 528.5 105.9 525.3 107.9 521.9 C109.9 518.4 111.9 514.9 113.4 511.2 C114.9 507.5 116.0 503.6 117.0 499.8 C118.0 495.9 118.7 492.0 119.6 488.0 C120.4 484.1 121.2 480.2 122.0 476.3 C122.8 472.4 123.9 468.5 124.6 464.6 C125.4 460.7 126.2 456.7 126.6 452.8 C127.0 448.8 127.0 444.8 127.0 440.8 C127.0 436.8 126.5 432.8 126.3 428.8 C126.2 424.8 125.9 420.8 126.0 416.8 C126.1 412.8 126.5 408.8 127.1 404.9 C127.6 400.9 128.3 397.0 129.0 393.0 C129.8 389.1 130.6 385.2 131.4 381.3 C132.2 377.3 132.9 373.4 133.7 369.5 C134.4 365.5 135.1 361.6 136.0 357.7 C136.9 353.8 137.9 349.9 139.0 346.1 C140.1 342.2 141.3 338.4 142.6 334.6 C143.9 330.8 144.9 326.9 146.6 323.3 C148.2 319.7 149.8 315.5 152.4 312.9 C155.1 310.3 159.5 307.2 162.7 307.5 C165.8 307.7 170.0 311.3 171.4 314.4 C172.8 317.6 171.7 322.4 171.2 326.3 C170.8 330.3 169.5 334.1 168.7 338.0 C167.8 342.0 167.0 345.9 166.3 349.8 C165.5 353.7 164.8 357.7 164.0 361.6 C163.3 365.5 162.6 369.5 161.7 373.4 C160.8 377.2 159.7 381.1 158.5 384.9 C157.4 388.8 156.0 392.5 154.8 396.3 C153.5 400.1 152.3 404.0 151.1 407.7 C149.8 411.5 148.6 415.4 147.1 419.1 C145.5 422.7 143.7 426.3 141.8 429.8 C139.9 433.3 137.7 436.7 135.7 440.2 C133.8 443.7 131.9 447.2 130.2 450.8 C128.6 454.5 127.1 458.2 125.9 462.0 C124.6 465.8 123.5 469.7 122.7 473.6 C121.8 477.5 121.2 481.4 120.7 485.4 C120.2 489.4 120.0 493.4 119.7 497.4 C119.5 501.4 119.6 505.4 119.1 509.3 C118.7 513.3 118.0 517.3 117.2 521.2 C116.4 525.1 115.2 528.9 114.4 532.9 C113.6 536.8 113.0 540.7 112.4 544.7 C111.9 548.6 111.5 552.6 111.1 556.6 C110.7 560.6 110.2 564.6 109.9 568.5 C109.5 572.5 109.2 576.5 108.9 580.5 C108.6 584.5 108.5 588.5 108.2 592.5 C107.9 596.5 107.5 600.5 107.2 604.4 C106.9 608.4 106.5 612.4 106.3 616.4 C106.0 620.4 106.0 624.4 105.7 628.4 C105.4 632.4 105.0 636.4 104.5 640.3 C104.0 644.3 103.4 648.3 102.9 652.2 C102.4 656.2 102.1 660.2 101.6 664.2 C101.1 668.1 100.6 672.1 100.0 676.1 C99.5 680.0 99.0 684.0 98.6 688.0 C98.1 691.9 97.7 695.9 97.3 699.9 C96.8 703.9 96.3 707.8 95.7 711.8 C95.2 715.8 94.5 719.7 93.8 723.6 C93.2 727.6 92.4 731.5 91.7 735.5 C91.1 739.4 90.4 743.3 89.8 747.3 C89.1 751.2 88.4 755.2 87.9 759.1 C87.3 763.1 86.8 767.1 86.5 771.1 C86.2 775.0 86.1 779.0 86.0 783.0 C85.9 787.0 86.2 791.1 85.8 795.0 C85.5 799.0 85.0 803.0 84.1 806.9 C83.2 810.8 81.7 814.5 80.4 818.3 C79.1 822.1 77.7 825.8 76.3 829.6 C74.9 833.4 73.6 837.1 72.1 840.8 C70.7 844.6 69.0 848.2 67.5 851.9 C65.9 855.6 64.2 859.2 62.7 862.9 C61.2 866.6 59.5 870.3 58.4 874.1 C57.4 877.9 56.7 881.9 56.2 885.9 C55.8 889.8 56.3 894.0 55.5 897.8 C54.6 901.7 52.6 905.2 51.0 908.9 C49.4 912.5 47.1 915.9 45.9 919.7 C44.6 923.5 44.4 927.6 43.5 931.5 C42.6 935.4 41.7 939.3 40.6 943.1 C39.4 946.9 38.0 950.7 36.7 954.4 C35.3 958.2 34.0 962.0 32.7 965.8 C31.4 969.5 29.4 974.9 28.6 977.1 C27.9 979.2 28.1 978.4 28.0 978.7"/>
+<path d="M95.9 798.6 C96.7 796.8 99.3 791.4 100.9 787.7 C102.4 784.0 103.3 780.0 105.0 776.4 C106.7 772.8 109.1 769.5 111.1 766.1 C113.1 762.6 115.4 759.3 117.1 755.7 C118.8 752.1 119.7 748.2 121.1 744.4 C122.4 740.6 123.6 736.8 125.1 733.1 C126.6 729.4 128.4 725.8 130.0 722.2 C131.7 718.5 133.5 715.0 135.0 711.3 C136.5 707.6 137.6 703.7 139.0 699.9 C140.5 696.2 142.0 692.5 143.8 688.9 C145.5 685.3 147.7 681.9 149.5 678.4 C151.4 674.9 153.2 671.3 154.9 667.7 C156.6 664.1 158.1 660.4 159.7 656.7 C161.3 653.0 162.8 649.3 164.4 645.6 C166.0 642.0 167.6 638.3 169.3 634.7 C170.9 631.0 172.7 627.4 174.4 623.8 C176.1 620.2 177.8 616.6 179.5 613.0 C181.3 609.4 183.0 605.7 184.9 602.2 C186.8 598.7 188.8 595.3 191.1 592.0 C193.4 588.7 196.1 585.7 198.4 582.5 C200.8 579.3 203.4 576.2 205.4 572.7 C207.5 569.3 209.2 565.7 210.7 562.0 C212.2 558.3 213.3 554.4 214.4 550.6 C215.5 546.7 216.3 542.8 217.2 538.9 C218.1 535.0 218.9 531.1 219.9 527.2 C220.8 523.3 221.8 519.4 222.9 515.6 C224.0 511.8 225.1 507.9 226.5 504.1 C227.9 500.4 229.4 496.7 231.3 493.2 C233.2 489.7 235.6 486.4 237.9 483.1 C240.2 479.9 242.8 476.8 245.1 473.6 C247.4 470.3 249.7 467.0 251.7 463.5 C253.7 460.1 255.5 456.5 257.2 452.9 C259.0 449.3 260.6 445.6 262.2 442.0 C263.8 438.3 265.3 434.6 266.9 430.9 C268.5 427.2 270.0 423.5 271.6 419.9 C273.2 416.2 274.9 412.6 276.5 408.9 C278.2 405.3 279.8 401.6 281.5 398.0 C283.1 394.4 284.8 390.7 286.4 387.1 C288.0 383.4 289.5 379.7 291.0 376.0 C292.6 372.3 294.1 368.6 295.7 364.9 C297.2 361.2 298.9 357.6 300.4 353.9 C301.9 350.2 303.1 346.4 304.5 342.6 C305.9 338.9 307.3 335.1 308.8 331.4 C310.2 327.7 311.9 324.0 313.4 320.3 C314.9 316.6 316.5 313.0 318.0 309.3 C319.5 305.6 321.0 301.9 322.6 298.2 C324.1 294.5 325.7 290.8 327.2 287.1 C328.8 283.4 330.5 279.8 332.1 276.1 C333.7 272.5 335.4 268.8 336.9 265.1 C338.5 261.5 339.9 257.7 341.3 254.0 C342.8 250.2 344.2 246.5 345.6 242.8 C347.0 239.0 348.4 235.3 349.8 231.5 C351.2 227.8 352.6 224.0 353.9 220.2 C355.1 216.4 356.9 212.6 357.2 208.7 C357.6 204.9 357.7 200.0 355.9 197.0 C354.0 194.1 349.7 191.1 346.4 190.9 C343.0 190.7 338.9 193.6 335.6 195.7 C332.3 197.8 329.3 200.7 326.6 203.6 C323.9 206.5 321.6 209.9 319.2 213.1 C316.9 216.3 314.7 219.6 312.5 223.0 C310.3 226.3 308.2 229.7 306.1 233.2 C304.1 236.6 302.1 240.1 300.1 243.6 C298.2 247.1 296.2 250.6 294.4 254.1 C292.6 257.7 290.8 261.3 289.2 264.9 C287.5 268.5 285.9 272.2 284.3 275.9 C282.7 279.5 281.0 283.2 279.5 286.9 C278.0 290.6 276.5 294.3 275.1 298.1 C273.7 301.8 272.4 305.6 271.1 309.4 C269.8 313.1 268.5 316.9 267.3 320.7 C266.1 324.5 264.9 328.4 263.8 332.2 C262.6 336.0 261.3 339.8 260.2 343.7 C259.0 347.5 257.9 351.3 256.8 355.2 C255.6 359.0 254.6 362.9 253.5 366.7 C252.4 370.5 251.2 374.4 250.1 378.2 C249.0 382.1 247.9 385.9 246.9 389.8 C245.8 393.6 244.9 397.5 244.0 401.4 C243.0 405.3 242.1 409.2 241.2 413.1 C240.3 417.0 239.5 420.9 238.6 424.8 C237.6 428.7 236.7 432.6 235.8 436.5 C234.9 440.4 233.9 444.3 233.1 448.2 C232.3 452.1 231.6 456.0 231.2 460.0 C230.7 464.0 230.6 468.0 230.4 472.0 C230.2 476.0 230.3 480.0 229.9 484.0 C229.6 487.9 229.0 491.9 228.2 495.8 C227.4 499.7 226.2 503.6 225.2 507.4 C224.1 511.3 222.9 515.1 221.9 519.0 C220.9 522.9 219.9 526.7 219.0 530.6 C218.1 534.5 217.3 538.5 216.4 542.3 C215.5 546.2 214.5 550.1 213.5 554.0 C212.4 557.8 211.1 561.6 210.2 565.5 C209.3 569.4 208.6 573.4 208.3 577.3 C207.9 581.3 208.1 585.3 208.2 589.3 C208.3 593.3 208.7 597.3 208.7 601.3 C208.8 605.3 208.7 609.3 208.5 613.3 C208.4 617.3 208.1 621.3 207.8 625.3 C207.5 629.3 207.3 633.3 207.0 637.3 C206.7 641.3 206.3 645.2 205.9 649.2 C205.5 653.2 205.0 657.2 204.6 661.2 C204.2 665.1 203.8 669.1 203.5 673.1 C203.1 677.1 202.8 681.1 202.5 685.1 C202.1 689.0 201.8 693.1 201.2 697.0 C200.6 700.9 199.9 704.9 198.7 708.7 C197.6 712.5 195.8 716.2 194.4 719.9 C192.9 723.6 191.2 727.3 190.1 731.1 C188.9 734.9 188.2 738.9 187.5 742.8 C186.8 746.7 186.1 750.7 185.7 754.7 C185.4 758.6 185.2 762.6 185.3 766.6 C185.4 770.6 186.0 774.6 186.2 778.6 C186.4 782.6 186.7 786.6 186.8 790.6 C186.9 794.6 186.9 798.6 187.0 802.6 C187.0 806.6 187.0 810.6 187.0 814.6 C186.9 818.6 186.8 822.6 186.7 826.6 C186.6 830.6 186.5 834.6 186.4 838.6 C186.3 842.6 186.2 846.6 186.2 850.6 C186.2 854.6 186.3 859.5 186.3 862.6 C186.3 865.6 186.1 869.8 186.1 868.8 C186.1 867.8 186.3 860.8 186.4 856.8 C186.5 852.8 186.7 848.8 186.8 844.8 C187.0 840.8 187.1 836.8 187.1 832.8 C187.2 828.8 187.2 824.8 187.2 820.8 C187.2 816.8 187.2 812.8 187.1 808.8 C187.1 804.8 187.0 800.8 187.0 796.8 C186.9 792.8 186.9 788.8 186.8 784.8 C186.7 780.8 186.5 776.8 186.5 772.8 C186.4 768.8 186.7 764.8 186.3 760.8 C186.0 756.9 186.1 752.5 184.4 749.1 C182.8 745.6 179.6 742.9 176.6 740.2 C173.7 737.6 169.8 735.9 166.9 733.3 C164.0 730.6 161.7 727.2 159.1 724.1 C156.6 721.0 154.2 717.8 151.6 714.8 C149.1 711.7 146.6 708.5 143.8 705.6 C141.1 702.7 138.4 699.6 135.2 697.3 C132.0 695.0 128.3 693.3 124.6 691.8 C120.9 690.3 117.0 689.4 113.1 688.4 C109.3 687.4 105.3 686.5 101.4 685.8 C97.5 685.2 93.5 684.7 89.5 684.6 C85.5 684.5 81.5 684.8 77.5 685.3 C73.6 685.9 69.6 686.9 65.8 688.0 C62.0 689.2 58.2 690.5 54.6 692.3 C51.1 694.1 47.6 696.2 44.4 698.6 C41.3 701.0 38.5 704.0 35.8 706.9 C33.0 709.8 30.4 712.8 28.1 716.1 C25.7 719.3 23.5 722.7 21.7 726.2 C19.9 729.7 18.4 733.5 17.1 737.3 C15.9 741.1 14.8 745.0 14.4 749.0 C14.0 752.9 13.8 757.1 14.5 760.9 C15.2 764.8 16.7 768.7 18.7 772.0 C20.8 775.4 23.7 778.4 26.8 780.9 C29.8 783.4 33.4 785.4 37.1 786.9 C40.7 788.4 44.8 789.7 48.7 789.8 C52.5 789.9 56.7 789.0 60.4 787.7 C64.0 786.3 67.3 783.6 70.8 781.8 C74.4 780.0 77.9 777.9 81.7 776.8 C85.4 775.6 89.6 775.8 93.5 774.9 C97.4 774.0 101.1 772.7 104.8 771.2 C108.5 769.7 111.9 767.1 115.6 766.0 C119.4 765.0 123.6 765.4 127.5 765.0 C131.5 764.7 135.6 764.9 139.4 763.9 C143.2 762.9 146.7 760.6 150.4 759.1 C154.1 757.6 157.7 755.8 161.5 754.7 C165.4 753.6 169.5 753.7 173.4 752.7 C177.2 751.8 181.7 751.2 184.7 749.0 C187.7 746.8 189.8 743.0 191.3 739.4 C192.9 735.9 192.2 731.2 193.9 727.8 C195.6 724.4 198.5 721.0 201.7 719.0 C204.9 717.0 209.4 716.8 213.2 715.6 C217.0 714.5 221.0 713.6 224.6 711.9 C228.1 710.3 231.4 707.8 234.7 705.6 C238.0 703.3 241.1 700.7 244.2 698.3 C247.4 695.8 250.5 693.3 253.7 690.9 C256.9 688.5 260.1 686.1 263.4 683.8 C266.6 681.4 270.3 679.6 273.2 676.9 C276.1 674.2 278.9 671.1 280.6 667.6 C282.3 664.1 282.7 659.9 283.3 655.9 C283.9 652.0 283.9 648.0 284.2 644.0 C284.5 640.0 284.5 636.0 285.0 632.0 C285.4 628.0 286.0 624.1 286.9 620.2 C287.8 616.3 288.9 612.4 290.2 608.6 C291.5 604.9 292.9 601.1 294.5 597.4 C296.1 593.8 297.9 590.2 299.9 586.7 C301.9 583.3 304.2 580.0 306.5 576.7 C308.7 573.4 311.2 570.2 313.6 567.1 C316.1 563.9 318.5 560.7 321.1 557.6 C323.6 554.6 326.1 551.4 328.9 548.6 C331.7 545.7 334.6 542.9 337.8 540.5 C341.0 538.1 344.4 535.6 348.0 534.3 C351.7 533.0 356.3 531.8 359.7 532.9 C363.1 533.9 366.7 537.3 368.4 540.5 C370.1 543.7 370.0 548.4 369.8 552.3 C369.7 556.2 368.7 560.2 367.7 564.1 C366.7 567.9 365.3 571.7 363.7 575.4 C362.1 579.0 360.1 582.5 358.1 586.0 C356.1 589.5 354.0 592.9 351.8 596.2 C349.7 599.6 347.6 603.0 345.3 606.3 C343.0 609.6 340.7 612.8 338.2 616.0 C335.7 619.1 333.0 622.1 330.4 625.1 C327.7 628.0 324.9 630.9 322.1 633.7 C319.3 636.6 316.3 639.2 313.4 642.0 C310.5 644.7 306.6 647.1 304.7 650.3 C302.9 653.5 300.9 658.6 302.1 661.4 C303.3 664.2 308.3 666.4 311.9 667.1 C315.6 667.8 319.9 666.5 323.8 665.6 C327.6 664.6 331.5 663.2 335.0 661.4 C338.6 659.7 342.0 657.4 345.1 655.0 C348.3 652.6 351.2 649.8 354.0 646.9 C356.7 644.0 359.1 640.8 361.5 637.6 C363.9 634.4 366.0 631.0 368.2 627.6 C370.3 624.2 372.4 620.8 374.3 617.3 C376.3 613.8 378.1 610.2 379.8 606.6 C381.5 603.0 383.0 599.3 384.6 595.6 C386.1 591.9 387.6 588.2 389.2 584.5 C390.7 580.8 392.3 577.2 393.9 573.5 C395.5 569.8 397.1 566.2 398.7 562.5 C400.3 558.8 401.6 555.0 403.4 551.5 C405.3 547.9 406.9 543.7 409.7 541.3 C412.6 538.9 416.7 538.0 420.4 537.1 C424.2 536.2 428.7 537.3 432.3 535.9 C435.8 534.5 438.6 531.2 441.6 528.5 C444.5 525.8 446.8 522.4 449.9 519.9 C453.0 517.4 456.5 515.4 460.0 513.5 C463.6 511.6 467.5 510.5 471.0 508.6 C474.4 506.6 477.8 504.3 480.8 501.7 C483.8 499.2 486.4 496.0 489.1 493.1 C491.9 490.2 494.6 487.2 497.3 484.3 C500.1 481.4 502.9 478.6 505.7 475.7 C508.5 472.9 511.3 470.0 514.0 467.1 C516.7 464.2 519.5 461.2 522.1 458.3 C524.8 455.3 527.3 452.1 529.9 449.2 C532.6 446.2 535.1 442.9 538.0 440.3 C541.0 437.7 544.2 434.9 547.8 433.4 C551.4 431.9 555.7 431.0 559.5 431.4 C563.2 431.9 567.6 433.6 570.3 436.1 C573.0 438.6 574.4 442.9 575.6 446.6 C576.9 450.3 577.4 457.1 577.8 458.4 C578.2 459.7 578.1 457.0 577.9 454.3 C577.8 451.7 576.6 446.4 576.9 442.4 C577.1 438.5 578.0 434.5 579.4 430.8 C580.8 427.1 583.1 423.7 585.1 420.2 C587.1 416.8 589.5 413.5 591.4 410.0 C593.3 406.5 594.8 402.7 596.3 399.0 C597.8 395.3 599.0 391.5 600.3 387.7 C601.7 384.0 602.9 380.2 604.1 376.4 C605.3 372.5 606.5 368.7 607.7 364.9 C608.9 361.1 610.2 357.3 611.5 353.5 C612.7 349.7 614.1 346.0 615.4 342.2 C616.6 338.4 617.8 334.5 619.0 330.7 C620.3 326.9 621.4 323.1 622.8 319.4 C624.3 315.6 626.0 312.0 627.7 308.4 C629.4 304.8 631.3 301.2 632.9 297.6 C634.6 293.9 636.2 290.3 637.5 286.5 C638.8 282.7 639.7 278.8 640.7 274.9 C641.6 271.0 642.1 267.1 643.1 263.2 C644.1 259.3 645.5 255.5 646.5 251.7 C647.6 247.8 648.8 244.0 649.6 240.1 C650.3 236.2 650.6 232.1 651.0 228.2 C651.5 224.2 651.7 220.2 652.3 216.2 C652.9 212.3 653.8 208.4 654.5 204.4 C655.2 200.5 656.1 196.6 656.6 192.6 C657.1 188.7 657.3 184.7 657.5 180.7 C657.7 176.7 657.6 172.7 657.7 168.7 C657.8 164.7 657.8 160.7 658.0 156.7 C658.3 152.7 658.6 148.7 659.2 144.8 C659.8 140.8 660.7 136.9 661.7 133.0 C662.6 129.1 663.7 125.3 664.8 121.4 C666.0 117.6 667.2 113.8 668.5 110.0 C669.7 106.2 671.0 102.4 672.3 98.6 C673.6 94.9 674.9 91.1 676.3 87.3 C677.7 83.6 679.0 79.8 680.6 76.1 C682.2 72.4 683.9 68.8 685.7 65.3 C687.5 61.7 689.5 58.2 691.4 54.7 C693.3 51.2 695.3 47.7 697.3 44.2 C699.2 40.7 701.1 37.2 703.1 33.7 C705.1 30.3 707.0 26.7 709.5 23.6 C711.9 20.5 715.2 15.7 717.9 15.1 C720.5 14.5 724.5 17.1 725.4 19.8 C726.2 22.5 723.9 27.6 722.8 31.5 C721.8 35.3 720.3 39.1 719.1 42.9 C717.9 46.7 716.7 50.5 715.4 54.3 C714.2 58.1 713.0 61.9 711.7 65.7 C710.4 69.5 709.0 73.2 707.6 77.0 C706.2 80.7 704.7 84.5 703.3 88.2 C701.9 91.9 700.4 95.7 699.0 99.4 C697.6 103.2 696.1 106.9 694.7 110.6 C693.3 114.4 691.9 118.1 690.5 121.9 C689.1 125.6 687.8 129.4 686.4 133.1 C684.9 136.8 683.5 140.6 681.8 144.2 C680.2 147.9 678.4 151.4 676.4 154.9 C674.4 158.4 672.1 161.7 670.0 165.1 C667.9 168.5 665.6 171.8 663.8 175.3 C662.0 178.9 660.5 182.6 659.2 186.4 C657.9 190.2 656.9 194.1 656.0 198.0 C655.0 201.8 654.1 205.7 653.4 209.7 C652.7 213.6 652.2 217.6 651.7 221.5 C651.2 225.5 651.1 229.5 650.6 233.5 C650.1 237.5 649.4 241.4 648.5 245.3 C647.6 249.2 646.0 252.9 645.0 256.8 C644.0 260.6 643.0 264.5 642.4 268.5 C641.8 272.4 641.6 276.4 641.6 280.4 C641.5 284.4 641.7 288.4 642.0 292.4 C642.4 296.4 643.1 300.4 643.8 304.3 C644.5 308.2 645.4 312.1 646.2 316.0 C647.0 320.0 647.7 323.9 648.3 327.8 C649.0 331.8 649.4 335.8 649.9 339.7 C650.4 343.7 651.0 347.7 651.6 351.6 C652.2 355.6 652.8 359.5 653.6 363.5 C654.4 367.4 654.8 371.5 656.3 375.1 C657.8 378.7 659.8 382.8 662.7 385.1 C665.6 387.5 669.9 388.8 673.7 389.1 C677.5 389.4 681.8 388.4 685.5 387.0 C689.1 385.6 692.6 383.3 695.6 380.8 C698.7 378.3 701.1 375.0 703.6 371.9 C706.2 368.8 708.4 365.5 710.9 362.3 C713.3 359.1 715.8 356.0 718.3 352.9 C720.7 349.7 723.1 346.5 725.5 343.3 C727.9 340.1 730.2 336.8 732.8 333.8 C735.4 330.7 737.9 327.5 741.0 325.0 C744.1 322.6 747.6 319.9 751.2 318.9 C754.9 318.0 759.3 318.3 763.0 319.2 C766.8 320.0 770.2 322.7 773.9 324.2 C777.6 325.7 781.3 327.5 785.2 328.3 C789.0 329.1 793.2 329.3 797.1 329.0 C801.0 328.7 805.2 328.0 808.8 326.5 C812.4 325.0 815.9 322.8 818.9 320.2 C821.9 317.6 823.9 313.9 826.5 311.0 C829.2 308.0 832.0 305.1 835.0 302.6 C838.1 300.0 843.0 297.2 845.0 295.8 C847.0 294.5 846.6 294.8 846.9 294.6"/>
+<path d="M403.5 807.2 C404.8 805.7 408.8 801.2 411.3 798.1 C413.9 795.0 416.3 791.8 418.8 788.7 C421.3 785.6 423.7 782.3 426.2 779.2 C428.6 776.1 431.2 773.0 433.8 769.9 C436.3 766.9 439.0 763.9 441.7 760.9 C444.4 758.0 447.2 755.2 450.1 752.4 C452.9 749.6 455.9 746.9 458.8 744.1 C461.7 741.4 464.5 738.5 467.4 735.7 C470.2 732.9 473.0 730.0 475.7 727.1 C478.5 724.2 481.2 721.2 483.9 718.3 C486.6 715.4 489.3 712.4 492.1 709.6 C494.9 706.7 497.9 704.0 500.8 701.3 C503.7 698.5 506.7 695.9 509.7 693.2 C512.6 690.5 515.6 687.8 518.6 685.1 C521.5 682.5 524.5 679.8 527.5 677.1 C530.4 674.4 533.3 671.7 536.3 669.0 C539.3 666.3 542.3 663.7 545.4 661.1 C548.5 658.6 551.6 656.1 554.7 653.6 C557.8 651.1 560.9 648.5 564.0 646.0 C567.1 643.4 570.1 640.8 573.2 638.3 C576.3 635.7 579.5 633.3 582.6 630.8 C585.6 628.2 589.6 624.7 591.7 623.0 C593.7 621.2 594.2 620.6 594.8 620.1"/>`;
+const signatureViewBox = "0 0 861 993";
+
+// "Last updated" tracks the community list, not the build — rebuilding after a
+// styling tweak shouldn't claim the directory changed. Resolved at build time,
+// so it's baked into the published HTML.
+const DATA_FILE = "src/data/communities.js";
+
+function lastUpdated() {
+  try {
+    const run = (cmd) => execSync(cmd, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+
+    // Uncommitted edits mean the commit date is already stale — say today, so
+    // a local preview doesn't claim the list is older than it is.
+    if (run(`git status --porcelain -- ${DATA_FILE}`)) return new Date();
+
+    // Otherwise: when that file was last committed.
+    const iso = run(`git log -1 --format=%cI -- ${DATA_FILE}`);
+    if (iso) return new Date(iso);
+  } catch {
+    // no git, or a shallow clone with no history for this path
+  }
+  try {
+    // A clone resets mtime to checkout time, so this is a fallback, not a peer.
+    return statSync(DATA_FILE).mtime;
+  } catch {
+    return new Date();
+  }
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const updated = lastUpdated();
+const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${updated.getFullYear()}`;
 ---
 
 <!doctype html>
@@ -10,26 +64,33 @@ import "../styles/global.css";
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="A curated list of communities, meetups, and things to do across Chennai."
+      content="A curated list of communities and activities in Chennai to help you find your people."
     />
-    <title>Somewhere in Chennai</title>
+    <title>Not home. Not work. But the secret third thing.</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
 
   <body>
-    <div class="sky-gradient" aria-hidden="true"></div>
+    <!-- The band is 948px tall and absolute; the clip keeps it from
+         stretching the page when the list is short (it used to leave empty
+         scroll room below the footer). -->
+    <div class="sky-clip" aria-hidden="true">
+      <div class="sky-gradient"></div>
+      <canvas class="sky-push"></canvas>
+    </div>
 
     <!-- ── Header ───────────────────────────────────────── -->
     <header class="site-header">
       <div class="header-left">
-        <h1 class="site-title">Somewhere in Chennai</h1>
+        <h1 class="site-title">Not home. Not work.<br />But the secret third thing.</h1>
         <p class="site-tagline">
-          A curated list of communities, meetups, and things to do across the city.
+          A curated list of communities and activities in Chennai to help you find
+          your people. I hope you find what you’re looking for here :)
         </p>
       </div>
       <nav class="header-nav" aria-label="Site navigation">
-        <button class="nav-btn" id="about-btn">About</button>
-        <button class="nav-btn is-solid" id="submit-btn">Submit</button>
+        <button class="nav-btn" id="about-btn"><span class="btn-ink is-hover-only">About</span></button>
+        <button class="nav-btn is-solid" id="submit-btn"><span class="btn-ink">Submit</span></button>
       </nav>
     </header>
 
@@ -50,7 +111,7 @@ import "../styles/global.css";
       <div class="community-table">
         <div class="table-head">
           <div class="cell cell-num" aria-hidden="true"></div>
-          <div class="cell" style="width: var(--col-name); flex-shrink: 0;" data-sort="name">
+          <div class="cell cell-head-name" data-sort="name">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Community
           </div>
@@ -87,6 +148,9 @@ import "../styles/global.css";
               <div class="cell cell-category">{community.categories.join(", ")}</div>
               <div class="cell cell-entry">{community.entry}</div>
               <div class="cell cell-freq">{community.frequency}</div>
+              <div class="cell cell-meta">
+                {[community.categories.join(", "), community.entry, community.frequency].join(" / ")}
+              </div>
             </div>
           ))
         }
@@ -95,49 +159,70 @@ import "../styles/global.css";
 
     <!-- ── Footer ───────────────────────────────────────── -->
     <footer class="site-footer">
-      <span>Last updated 6 Jun, 2026</span>
-      <span>Designed by Harsha, Built using Claude Code</span>
+      <span>Last updated {updatedLabel}</span>
+      <span>
+        Designed by <a
+          class="footer-link"
+          href="https://x.com/harshajayram"
+          target="_blank"
+          rel="noopener"
+        >Harsha</a> + Claude Code
+      </span>
     </footer>
 
-    <!-- ── About envelope ─────────────────────────────────── -->
-    <div class="envelope-overlay" id="about-overlay" role="dialog" aria-modal="true" aria-label="About this site">
-      <div class="envelope-scene">
-        <button class="envelope-x" id="envelope-x" aria-label="Close">✕</button>
-
-        <!-- Photos peek out behind the letter -->
-        <div class="env-photo env-photo-left"></div>
-        <div class="env-photo env-photo-right"></div>
-
-        <!-- Letter in front -->
-        <div class="envelope-letter">
-          <p>Whether you're new to a city, or lived their all your life, it's never easy to meet people who resonates with you and share your interests. So I hope that you'll find something interesting here, so it can make your weekends a little exciting.</p>
-          <p>The list currently consists of communities and meetups I've personally attended / heard first-hand experiences in my friends' circle. I'm planning to keep the list updated, so please feel free to submit if you know any.</p>
-          <p>Please reach out to @harshajayram to share your feedback.</p>
-          <p class="letter-sign">- Harsha</p>
-        </div>
-
-        <!-- Flap — open, sits behind everything sliding out -->
-        <div class="envelope-flap"></div>
-
-        <!-- Envelope body — stays fixed, covers the bottoms -->
-        <div class="envelope-body">
-          <svg class="envelope-folds" viewBox="0 0 560 280" preserveAspectRatio="none" aria-hidden="true">
-            <!-- Fold crease marks — barely-visible highlights where paper catches light -->
-            <line x1="0"   y1="0"   x2="262" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
-            <line x1="560" y1="0"   x2="298" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
-            <line x1="0"   y1="280" x2="262" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
-            <line x1="560" y1="280" x2="298" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
-            <line x1="262" y1="120" x2="298" y2="120" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
-          </svg>
-        </div>
+    <!-- ── About letter ─────────────────────────────────── -->
+    <!-- A folded letter that opens. <dialog>, like the submit modal: Esc is
+         native and a backdrop click closes it. No close control on larger
+         screens, matching the design (Figma 967:595); on a phone the letter
+         fills the screen, so a close button shows there. -->
+    <dialog class="letter-dialog" id="about-dialog" aria-label="About this site">
+      <button type="button" class="letter-close" aria-label="Close">
+        <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="letter" id="about-letter">
+        {letterFolds.map(([from, to], i) => (
+          <div
+            class={`letter-panel letter-panel-${i}`}
+            style={`--f: ${from}; --g: ${to};`}
+            aria-hidden={i === 0 ? undefined : "true"}
+          >
+            <div class="letter-face">
+              <div class="letter-sheet">
+                <div class="letter-photos">
+                  <figure class="polaroid"><img src="/about/polaroid-1.jpg" alt={i === 0 ? "An old colonial building in Chennai, with cinema posters below" : ""} /></figure>
+                  <figure class="polaroid"><img src="/about/polaroid-2.jpg" alt={i === 0 ? "A weaving workshop, hands at a wooden loom" : ""} /></figure>
+                  <figure class="polaroid"><img src="/about/polaroid-3.jpg" alt={i === 0 ? "A book club, everyone holding up what they're reading" : ""} /></figure>
+                </div>
+                <h2 class="letter-greeting">Hey there, thanks for stopping by.</h2>
+                <div class="letter-body">
+                  <p>Chennai is full of communities doing interesting things - book clubs, art classes, open mics, workshops, and countless other gatherings. The challenge is that many of them aren't well known. So I was surprised when people say there’s not much to do in the city except to go to malls and cafes.</p>
+                  <p>Whether you’re new to the city or simply looking to meet people who share your interests, this website will help you explore more of Chennai and find communities that are worth showing up for.</p>
+                  <p>Please feel free to share your feedback :)</p>
+                  <p>With love,</p>
+                </div>
+                <svg
+                  class="letter-signature"
+                  viewBox={signatureViewBox}
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  role={i === 0 ? "img" : undefined}
+                  aria-label={i === 0 ? "Signed, Harsha" : undefined}
+                  aria-hidden={i === 0 ? undefined : "true"}
+                  set:html={signaturePaths}
+                />
+              </div>
+            </div>
+            <div class="letter-back"></div>
+          </div>
+        ))}
       </div>
-    </div>
+    </dialog>
 
     <!-- ── Submit modal ─────────────────────────────────── -->
     <dialog class="modal" id="submit-modal">
-      <button class="modal-close" data-close aria-label="Close">✕</button>
       <h2 class="modal-title">Submit a community</h2>
-      <p class="modal-subtitle">Know anything I missed?</p>
+      <p class="modal-subtitle">Know any cool community, or want yours to be featured?</p>
       <form id="submit-form">
         <div class="form-field">
           <label class="form-label" for="f-name">Community Name</label>
@@ -149,12 +234,32 @@ import "../styles/global.css";
         </div>
         <div class="form-row">
           <div class="form-field">
-            <label class="form-label" for="f-entry">Entry</label>
-            <input class="form-input" id="f-entry" name="entry" type="text" placeholder="Free" />
+            <span class="form-label" id="f-entry-label">Entry</span>
+            <div class="multiselect" id="entry-select">
+              <button
+                type="button"
+                class="form-input multiselect-trigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-labelledby="f-entry-label"
+              >
+                <span class="multiselect-value is-empty">Free</span>
+                <svg class="multiselect-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+              </button>
+              <div class="multiselect-menu" role="listbox" aria-multiselectable="true" aria-labelledby="f-entry-label" hidden>
+                {entryOptions.map((opt) => (
+                  <button type="button" class="multiselect-option" role="option" aria-selected="false" data-value={opt}>
+                    <span>{opt}</span>
+                    <svg class="multiselect-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                  </button>
+                ))}
+              </div>
+              <input type="hidden" name="entry" />
+            </div>
           </div>
           <div class="form-field">
             <label class="form-label" for="f-link">Social Link</label>
-            <input class="form-input" id="f-link" name="social" type="text" placeholder="Ex: instagram.com/bessyreads" />
+            <input class="form-input" id="f-link" name="social" type="text" placeholder="Ex: Bessy Reads" />
           </div>
         </div>
         <button class="form-submit" type="submit">Submit</button>
@@ -164,14 +269,20 @@ import "../styles/global.css";
 
     <!-- ── Interactions ─────────────────────────────────── -->
     <script>
-      const SHEET_ENDPOINT = "";
+      const SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbybNKWYR6Hzm7su5TkBcZgv7a7tvA0tpr7jkqXlbigg6S7sgW2kPOxjSMH3PUWfuvrEog/exec";
 
       // Tag each row with its original position so we can reset later
       const rows = Array.from(document.querySelectorAll(".community-row"));
       rows.forEach((row, i) => { row.dataset.originalIndex = String(i); });
 
       // ── Shared filter/renumber ────────────────────────────
-      function applyFilter() {
+      // `animate` is only passed from a pill click (after the outgoing rows
+      // have faded — see Filter pills): the rows now showing ease up 6px
+      // into place over 520ms, staggered 30ms apart and capped at ten rows.
+      // Sorting calls this too, and stays instant. Skipped under reduced
+      // motion.
+      const stillRows = window.matchMedia("(prefers-reduced-motion: reduce)");
+      function applyFilter(animate = false) {
         const activeBtn = document.querySelector(".filter-btn.is-active");
         const filter = activeBtn ? activeBtn.dataset.filter : "all";
         let n = 0;
@@ -182,16 +293,111 @@ import "../styles/global.css";
           if (show) {
             n += 1;
             row.querySelector(".cell-num").textContent = String(n).padStart(2, "0");
+            if (animate && !stillRows.matches && row.animate) {
+              row.animate(
+                [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
+                { duration: 520, delay: Math.min(n - 1, 10) * 30, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)", fill: "backwards" },
+              );
+            }
           }
         });
       }
 
       // ── Filter pills ──────────────────────────────────────
+      // A crossfade rather than a cut: the rows on screen fade out over
+      // 220ms, then the new set is swapped in and eases up (applyFilter),
+      // while the table itself glides from its old height to its new one —
+      // without that, everything below jumped in a single frame, which is
+      // what still read as abrupt. The token drops a swap that a quicker
+      // second click has overtaken.
+      const FADE_OUT = 220;
+      const tableBox = document.querySelector("main");
+      let filterToken = 0;
+
+      // Holding the scroll position. A shorter list makes the page shorter;
+      // if it ends up shorter than where the reader is scrolled to, the
+      // browser clamps the scroll and the page jumps on its own. So after a
+      // swap, <main> gets a min-height that keeps the page at least as tall
+      // as the current scroll plus the viewport — the footer lands at the
+      // bottom of the screen and nothing moves. As the reader scrolls back
+      // up, the hold shrinks with them (the footer stays at the bottom of
+      // the screen) until the page's natural height takes over.
+      //
+      // The natural height is worked out from the table's own height rather
+      // than by clearing the hold and measuring the page — clearing it would
+      // let the browser clamp the scroll before there was a chance to stop it.
+      const tableEl = document.querySelector(".community-table");
+      let held = null;   // { main, doc }: natural heights while holding
+      function releaseHold() {
+        held = null;
+        tableBox.style.minHeight = "";
+        window.removeEventListener("scroll", relaxHold);
+      }
+      function relaxHold() {
+        if (!held) return;
+        const extra = window.scrollY + window.innerHeight - held.doc;
+        if (extra <= 0) { releaseHold(); return; }
+        tableBox.style.minHeight = held.main + extra + "px";
+      }
+      function holdScroll(scrollTop) {
+        const pad = parseFloat(getComputedStyle(tableBox).paddingBottom) || 0;
+        const main = tableEl.offsetHeight + pad;
+        const doc = Math.max(
+          window.innerHeight,
+          document.documentElement.scrollHeight - tableBox.offsetHeight + main,
+        );
+        const extra = scrollTop + window.innerHeight - doc;
+        window.removeEventListener("scroll", relaxHold);
+        if (extra <= 0) { held = null; tableBox.style.minHeight = ""; return; }
+        held = { main, doc };
+        tableBox.style.minHeight = main + extra + "px";
+        window.addEventListener("scroll", relaxHold, { passive: true });
+      }
+
+      function glideHeight(from) {
+        const to = tableBox.offsetHeight;
+        if (Math.abs(to - from) < 2 || !tableBox.animate) return;
+        tableBox.getAnimations().forEach((a) => a.cancel());
+        const prev = tableBox.style.overflowY;
+        tableBox.style.overflowY = "clip";
+        const anim = tableBox.animate(
+          [{ height: from + "px" }, { height: to + "px" }],
+          { duration: 480, easing: "cubic-bezier(0.25, 0.8, 0.25, 1)" },
+        );
+        const reset = () => { tableBox.style.overflowY = prev; };
+        anim.onfinish = reset;
+        anim.oncancel = reset;
+      }
       document.querySelectorAll(".filter-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
+          if (btn.classList.contains("is-active")) return;
           document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("is-active"));
           btn.classList.add("is-active");
-          applyFilter();
+          const token = ++filterToken;
+          const showing = [...document.querySelectorAll(".community-row:not([hidden])")];
+          if (stillRows.matches || !showing.length || !showing[0].animate) {
+            const scrollTop = window.scrollY;
+            tableBox.style.minHeight = tableBox.offsetHeight + "px";
+            applyFilter(true);
+            holdScroll(scrollTop);
+            return;
+          }
+          showing.forEach((row) => {
+            row.getAnimations().forEach((a) => a.cancel());
+            row.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_OUT, easing: "cubic-bezier(0.4, 0, 0.6, 1)", fill: "forwards" });
+          });
+          setTimeout(() => {
+            if (token !== filterToken) return;
+            const from = tableBox.offsetHeight;
+            const scrollTop = window.scrollY;
+            // Pin the current height through the swap so the browser has
+            // nothing to clamp, then keep only as much as the scroll needs.
+            tableBox.style.minHeight = from + "px";
+            showing.forEach((row) => row.getAnimations().forEach((a) => a.cancel()));
+            applyFilter(true);
+            holdScroll(scrollTop);
+            glideHeight(from);
+          }, FADE_OUT);
         });
       });
 
@@ -255,29 +461,754 @@ import "../styles/global.css";
         row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
       });
 
-      // ── About envelope ────────────────────────────────────
-      const aboutOverlay = document.getElementById("about-overlay");
-      const closeAbout = () => {
-        aboutOverlay.classList.remove("is-open");
-        document.body.style.overflow = "";
+      // ── About letter ──────────────────────────────────────
+      // The panels are fixed slices of the sheet, so they need its height.
+      // That's A4 — width × √2 — unless the copy runs longer than that (a
+      // narrow phone), in which case the sheet grows to fit. Measured off the
+      // first panel's copy, which is laid out at natural height, and written
+      // to --sheet-h. Measured on open (it's display:none before that) and on
+      // resize while open.
+      const A4 = Math.SQRT2;
+      const aboutDialog = document.getElementById("about-dialog");
+      const aboutLetter = document.getElementById("about-letter");
+      const sheetProbe = aboutLetter.querySelector(".letter-sheet");
+      const sizeLetter = () => {
+        const h = Math.max(aboutLetter.offsetWidth * A4, sheetProbe.offsetHeight);
+        aboutLetter.style.setProperty("--sheet-h", Math.round(h) + "px");
       };
+      // Without hover (a phone), tapping the photos fans them out and back,
+      // which hover does elsewhere. All three copies follow, so the stack
+      // stays consistent across panels.
+      const letterPhotos = aboutLetter.querySelectorAll(".letter-photos");
+      letterPhotos.forEach((group) => group.addEventListener("click", () => {
+        const spread = !group.classList.contains("is-spread");
+        letterPhotos.forEach((g) => g.classList.toggle("is-spread", spread));
+      }));
       document.getElementById("about-btn").addEventListener("click", () => {
-        aboutOverlay.classList.add("is-open");
-        document.body.style.overflow = "hidden";
+        letterPhotos.forEach((g) => g.classList.remove("is-spread"));
+        aboutDialog.showModal();
+        aboutDialog.scrollTop = 0;
+        sizeLetter();
       });
-      aboutOverlay.addEventListener("click", (e) => { if (e.target === aboutOverlay) closeAbout(); });
-      document.getElementById("envelope-x").addEventListener("click", closeAbout);
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && aboutOverlay.classList.contains("is-open")) closeAbout();
-      });
+      window.addEventListener("resize", () => { if (aboutDialog.open) sizeLetter(); });
+
+      // Closing is shared with the submit modal — see "Dialog close" below.
 
       // ── Submit modal ──────────────────────────────────────
       const submitModal = document.getElementById("submit-modal");
       document.getElementById("submit-btn").addEventListener("click", () => submitModal.showModal());
-      document.querySelectorAll("dialog.modal").forEach((dialog) => {
-        dialog.querySelector("[data-close]").addEventListener("click", () => dialog.close());
-        dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+
+      // ── Dialog close ──────────────────────────────────────
+      // Esc and a click on the backdrop (the dialog element itself) dismiss
+      // both dialogs; the letter also has a close button on phones. A <dialog> closes
+      // instantly, so both ways out are intercepted — Esc is its "cancel"
+      // event — and .is-closing plays a short fade on the dialog and its
+      // scrim; the real close() runs when that ends. The timeout is a
+      // backstop in case animationend never arrives (a hidden tab, say).
+      const stillDialogs = window.matchMedia("(prefers-reduced-motion: reduce)");
+      function closeAnimated(dialog) {
+        if (!dialog.open || dialog.classList.contains("is-closing")) return;
+        if (stillDialogs.matches) { dialog.close(); return; }
+        dialog.classList.add("is-closing");
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          dialog.classList.remove("is-closing");
+          dialog.close();
+        };
+        dialog.addEventListener("animationend", function onEnd(e) {
+          if (e.target !== dialog || e.animationName !== "dialog-out") return;
+          dialog.removeEventListener("animationend", onEnd);
+          finish();
+        });
+        setTimeout(finish, 400);
+      }
+      document.querySelectorAll("dialog.modal, dialog.letter-dialog").forEach((dialog) => {
+        dialog.addEventListener("click", (e) => { if (e.target === dialog) closeAnimated(dialog); });
+        dialog.querySelector(".letter-close")?.addEventListener("click", () => closeAnimated(dialog));
+        dialog.addEventListener("cancel", (e) => { e.preventDefault(); closeAnimated(dialog); });
       });
+
+      // ── Submit button ink ─────────────────────────────────
+      // Line the label's gradient up with the page's, so the letters read as a
+      // window onto the wash behind them. Page coordinates, not element ones —
+      // the button and the wash scroll together, so this only moves on resize.
+      // Both buttons have one: Submit's always shows, About's only on hover.
+      const inks = document.querySelectorAll(".btn-ink");
+
+      function alignInk() {
+        const reach = document.querySelector(".sky-gradient").offsetHeight;
+        inks.forEach((ink) => {
+          const r = ink.getBoundingClientRect();
+          ink.style.backgroundSize =
+            `${document.documentElement.clientWidth}px ${reach}px`;
+          ink.style.backgroundPosition =
+            `${-(r.left + window.scrollX)}px ${-(r.top + window.scrollY)}px`;
+        });
+      }
+
+      alignInk();
+      window.addEventListener("resize", alignInk);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(alignInk);
+
+      // ── Hero gradient push ────────────────────────────────
+      // The cursor shoves the wash aside and it springs back. This has to be
+      // WebGL: displacement means sampling a pixel from a shifted position,
+      // which a CSS gradient or a 2D canvas can't do. The CSS .sky-gradient
+      // underneath is the fallback when WebGL is missing or motion is reduced.
+      //
+      // Only the vertical component displaces anything — the ramp is uniform
+      // across its width, so a sideways shift would be invisible.
+      const push = document.querySelector(".sky-push");
+      const stillMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+      // The gradient's real stops, straight from node 919:11's fill — NOT
+      // sampled off a render. Figma's order is: gradient at full strength ->
+      // dither -> frame opacity. Dithering an already-faded copy, which is
+      // what sampling gave, is why it looked dull.
+      //
+      // Figma writes it as 0deg on a vertically flipped container, which nets
+      // out to these positions measured from the top.
+      const RAMP = [
+        [0.000,  "#e9f23a"], [0.0353, "#e9f23a"],
+        [0.2007, "#c6edfd"], [0.3279, "#f5fbfe"],
+        [1.000,  "#ffffff"],
+      ];
+      // Phones (below 600px) use the same colours with the blue and the
+      // near-white moved: the yellow-to-blue blend still finishes above the
+      // tagline (~100px of the 640px band), but the blue then fades out over
+      // ~240px instead of ~80, so the wash reaches down toward the pills
+      // rather than stopping at the buttons. Mirrored in --sky-tint.
+      const RAMP_PHONE = [
+        [0.000,  "#e9f23a"], [0.0353, "#e9f23a"],
+        [0.156,  "#c6edfd"], [0.531,  "#f5fbfe"],
+        [1.000,  "#ffffff"],
+      ];
+      const phoneRamp = window.matchMedia("(max-width: 600px)");
+      const OPACITY = 0.8;     // the frame's Appearance opacity
+      const CURSOR_PUSH = false;  // paused — flip to true to bring the trail back
+
+      // Figma node 919:11's Dither effect, read from its own source:
+      // Blue Noise, pixelSize 2, levels 5, brightness 100, contrast 1.14,
+      // mono false. brightness maps to (value - 100) / 200.
+      const LEVELS     = 5;
+      const DOT        = 2;      // "Size" — CSS px per cell
+      const CONTRAST   = 1.14;
+      const BRIGHTNESS = 100;
+      const TILE       = 64;
+      // How hard the speckle reads against the ramp, 0..1. Figma's effect is
+      // 1 — every cell snapped fully to its quantised colour — which at body
+      // size fights the tagline. This blends each cell part-way back toward
+      // the smooth ramp: the pattern and its grain are unchanged, only its
+      // contrast drops. Applied everywhere, so the band stays one texture.
+      const STRENGTH   = 0.7;
+
+      // Mosaic mode (after craft.wild.as): instead of the 2px blue-noise
+      // dither, the band is a grid of flat tiles. Each tile takes the ramp
+      // colour at its own height, nudged up or down by a slow-moving noise
+      // field stretched along a diagonal, then snapped to the ramp's few
+      // flat colours — so bands of yellow, green, blue and white drift
+      // across the grid, and the bottom edge dissolves raggedly into the
+      // page where the ramp turns white. No cursor response, by request.
+      // Toned down for the hero copy: small amplitude, slow drift, and the
+      // same STRENGTH blend back toward the smooth ramp.
+      const MOSAIC       = false;  // parked 2026-10-10 — Harsha prefers the dither
+      const MOSAIC_CELL  = 8;      // CSS px per tile, grid gap included
+      const MOSAIC_GAP   = 1;      // CSS px of grid line between tiles
+      const MOSAIC_GRID  = 0.6;    // how far the gap goes toward --bg, 0..1
+      const MOSAIC_AMP   = 0.16;   // field amplitude, in fractions of band height
+      const MOSAIC_JITTER = 0.06;  // per-tile scatter, same units — ragged edges
+      const MOSAIC_SPEED = 2.5;    // drift rate; 1 ≈ a band every ~40s
+      // The tiles ignore STRENGTH and OPACITY: they're fully flat and at the
+      // ramp's full strength, not the frame's 80%. The first cut used both
+      // and Harsha found it dull — the reference is vivid, and the ramp's
+      // own colours at full strength still clear 9:1 against the copy.
+      const MOSAIC_STRENGTH = 1.0;
+      const MOSAIC_OPACITY  = 1.0;
+      // Tiles snap along the ramp, not per RGB channel: each tile's ramp
+      // position is rounded to a multiple of MOSAIC_STEP, then the ramp is
+      // sampled there. Per-channel rounding to five levels collapsed the
+      // gradient into yellow, one green and cyan; this walks it gradually,
+      // yellow → greens → cyan → pale → white, in about a dozen flat steps.
+      const MOSAIC_STEP = 0.03;    // fraction of band height per colour step
+      // Cursor: within this radius the field is pushed up the ramp, so the
+      // tiles around the pointer go yellower / more saturated in the ramp's
+      // own colours, and the push is shaped by the field so it pools as a
+      // blob rather than a disc. Settles back when the pointer leaves. A
+      // local effect only — not the reference's long-press flood. Fine
+      // pointers only, for the touch reasons CURSOR_PUSH hit. (An accent
+      // colour was tried here and rejected: it looked random against the
+      // gradient.)
+      const MOSAIC_CURSOR   = true;
+      const MOSAIC_CURSOR_R = 150;    // CSS px, gaussian radius
+      const MOSAIC_CURSOR_AMP = 0.16; // push, in fractions of band height
+      // On top of the lift, tiles near the pointer become richer versions
+      // of their own colour: chroma scaled up (MOSAIC_CURSOR_CHROMA, 1 = no
+      // change) with a touch less brightness so nothing clips. Same hue, so
+      // it reads as the gradient intensifying rather than a new colour.
+      // White tiles have no chroma to scale, so the effect dies out where
+      // the band does. Deepest tile stays above 7:1 against #343434.
+      const MOSAIC_CURSOR_VIVID  = 0.95; // 0..1, how far toward the rich version at the centre
+      const MOSAIC_CURSOR_CHROMA = 2.4;
+      // A warm tilt on the rich version: red up by half this, blue down by
+      // all of it. Yellow goes golden, cyan goes aqua. 0 = neutral.
+      const MOSAIC_CURSOR_WARMTH = 0.3;
+      // The tiles stop above the filter pills, whatever the ramp or the
+      // cursor is doing: every tile below the first pill's top minus this
+      // gap is the page colour, with the edge broken up by the tile
+      // scatter. Measured from the DOM in size(), so it follows the layout
+      // at every breakpoint. (The cursor lift can otherwise pull colour
+      // ~250px below where the ramp goes white — past the pills.)
+      const MOSAIC_FLOOR_GAP = 20;    // CSS px above the filter bar
+      const MOSAIC_FLOOR_RAG = 28;    // CSS px of ragged edge
+
+      // Figma builds its blue-noise tile at runtime rather than shipping one:
+      // seeded white noise, three passes of subtracting a 5x5 box blur (which
+      // kills the low frequencies), then rank-ordered to a flat distribution.
+      // Ported verbatim so the tile is bit-identical to the design's.
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return function () {
+          a |= 0;
+          a = (a + 0x6D2B79F5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function blueNoiseTile(N) {
+        const rnd = mulberry32(0x9E3779B9);
+        const buf = new Float32Array(N * N);
+        for (let i = 0; i < buf.length; i += 1) buf[i] = rnd();
+        const tmp = new Float32Array(buf.length);
+        for (let pass = 0; pass < 3; pass += 1) {
+          for (let y = 0; y < N; y += 1) {
+            for (let x = 0; x < N; x += 1) {
+              let sum = 0, count = 0;
+              for (let dy = -2; dy <= 2; dy += 1) {
+                for (let dx = -2; dx <= 2; dx += 1) {
+                  sum += buf[((y + dy + N) % N) * N + ((x + dx + N) % N)];
+                  count += 1;
+                }
+              }
+              tmp[y * N + x] = sum / count;
+            }
+          }
+          for (let j = 0; j < buf.length; j += 1) buf[j] -= 0.5 * tmp[j];
+        }
+        // rank order, so the thresholds are uniformly spread over [0,1)
+        const idx = Array.from(buf.keys()).sort((a, b) => buf[a] - buf[b]);
+        const out = new Uint8Array(N * N * 4);
+        idx.forEach((cellIndex, rank) => {
+          const v = Math.round(((rank + 0.5) / buf.length) * 255);
+          out[cellIndex * 4] = v;
+          out[cellIndex * 4 + 1] = v;
+          out[cellIndex * 4 + 2] = v;
+          out[cellIndex * 4 + 3] = 255;
+        });
+        return out;
+      }
+
+      const PUSH_PX = 50;    // how far the wash is shoved right at the cursor
+      const RADIUS  = 62;    // brush width — same as the old canvas trail
+      const SPACING = 22;    // px between trail points; under the radius, so
+                             // they overlap into a stroke rather than dots
+
+      const VERT = `
+        attribute vec2 a_pos;
+        void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+      `;
+
+      const TRAIL = 32;     // points kept; TRAIL x SPACING is the path length
+
+      const FRAG = `
+        precision mediump float;
+        #define TRAIL 32
+        uniform vec2      u_res;
+        uniform float     u_push;
+        uniform float     u_radius;
+        uniform sampler2D u_ramp;
+        uniform vec3      u_bg;
+        uniform vec3      u_pts[TRAIL];   // xy = device px, z = strength
+        uniform float     u_levels;
+        uniform float     u_dot;        // device px per cell (Figma "Size")
+        uniform float     u_contrast;
+        uniform float     u_bright;
+        uniform float     u_opacity;
+        uniform float     u_strength;   // speckle contrast against the ramp
+        uniform sampler2D u_noise;      // 64x64 blue-noise tile
+        uniform float     u_tile;
+        uniform float     u_mosaic;     // 1 = tile field, 0 = Figma dither
+        uniform float     u_cellpx;     // tile pitch, device px
+        uniform float     u_gappx;      // grid line, device px
+        uniform float     u_grid;       // grid line strength toward u_bg
+        uniform float     u_amp;        // field amplitude, ramp units
+        uniform float     u_jitter;     // per-tile scatter, ramp units
+        uniform float     u_mstrength;  // tile flatness, 0..1
+        uniform float     u_mopacity;   // tile opacity over u_bg
+        uniform vec3      u_cursor;     // xy = CSS px, z = strength 0..1
+        uniform float     u_cur_r;      // CSS px
+        uniform float     u_cur_amp;    // ramp units
+        uniform float     u_cur_vivid;  // 0..1
+        uniform float     u_cur_chroma; // chroma multiplier at the centre
+        uniform float     u_cur_warmth; // warm tilt of the rich version
+        uniform float     u_floor;      // CSS px: tiles below this are u_bg
+        uniform float     u_floor_rag;  // CSS px of scatter on that edge
+        uniform float     u_step;       // ramp units per colour step
+        uniform float     u_time;       // seconds
+        uniform float     u_dpr;
+
+        // Value noise, three octaves — enough for soft bands, cheap enough
+        // to run per fragment (the input is per tile, so neighbours share).
+        float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float vnoise(vec2 p) {
+          vec2 i = floor(p), f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i),               hash(i + vec2(1.0, 0.0)), f.x),
+                     mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+        }
+        float fbm(vec2 p) {
+          float v = 0.0, a = 0.5;
+          for (int i = 0; i < 3; i++) { v += a * vnoise(p); p = p * 2.03 + 17.1; a *= 0.5; }
+          return v;   // ~0.0–0.875, centred near 0.44
+        }
+
+        // Ported from Figma's own Dither source, so the maths matches rather
+        // than approximates: off = (t - 0.5) / L, then round to L steps.
+        float quantize(float c, float t) {
+          float L = u_levels - 1.0;
+          float off = (t - 0.5) / L;
+          return clamp(floor((c + off) * L + 0.5) / L, 0.0, 1.0);
+        }
+
+        void main() {
+          vec2  p     = vec2(gl_FragCoord.x, u_res.y - gl_FragCoord.y);
+          float clear = 0.0;
+          vec2  shove = vec2(0.0);
+
+          for (int i = 0; i < TRAIL; i++) {
+            vec3 pt = u_pts[i];
+            if (pt.z <= 0.0) continue;
+            vec2  d    = p - pt.xy;
+            float dist = length(d);
+            float fall = exp(-(dist * dist) / (u_radius * u_radius));
+            float w    = fall * pt.z;
+            clear = max(clear, w);                       // max, so overlapping
+            vec2 dir = dist > 0.5 ? d / dist : vec2(0.0, 1.0);
+            shove += dir * w;                            // points don't burn in
+          }
+
+          // Shove the colour outward along the whole trail, then clear what it
+          // was shoved off so the page shows through behind the cursor.
+          float dy  = clamp(shove.y, -2.0, 2.0) * u_push;
+          float sy  = clamp((p.y - dy) / u_res.y, 0.0, 1.0);
+          vec3  col = texture2D(u_ramp, vec2(sy, 0.5)).rgb;
+          col = mix(col, u_bg, clamp(clear, 0.0, 1.0));
+
+          col = clamp((col - 0.5) * u_contrast + 0.5 + u_bright, 0.0, 1.0);
+
+          vec3 q;
+          if (u_mosaic > 0.5) {
+            // Tile centre in CSS px, y down, so the field is the same size
+            // on every screen density.
+            vec2 tile = floor(gl_FragCoord.xy / u_cellpx);
+            vec2 tc   = (tile + 0.5) * u_cellpx;
+            vec2 tcss = vec2(tc.x, u_res.y - tc.y) / u_dpr;
+
+            // The field: rotated 30° and squeezed along that axis so it
+            // reads as diagonal bands, drifting slowly along them.
+            vec2 fq = tcss * 0.009;
+            fq = mat2(0.866, -0.5, 0.5, 0.866) * fq;
+            fq.x *= 0.35;
+            fq += u_time * vec2(0.025, 0.012);
+            // Smooth field plus a fixed per-tile scatter: the field moves
+            // the colour boundaries, the scatter makes single tiles flip
+            // early or late as a boundary passes, so edges stay ragged
+            // instead of stepping a whole row at once.
+            float n = (fbm(fq) - 0.44) * u_amp + (hash(tile) - 0.5) * u_jitter;
+
+            // Cursor: a gaussian well, shaped by the field so it's a blob
+            // not a disc, lifting the tiles up the ramp
+            vec2  cd = tcss - u_cursor.xy;
+            float ck = exp(-dot(cd, cd) / (u_cur_r * u_cur_r)) * u_cursor.z;
+            ck *= 0.55 + 1.1 * fbm(fq * 2.7 + 3.1);
+            ck  = clamp(ck, 0.0, 1.0);
+            n -= ck * u_cur_amp;
+
+            // The tile's ramp position, nudged by the field, snapped to a
+            // step — so neighbours sit one or two flat steps apart and the
+            // gradient still reads as a gradient across the grid.
+            float ty = clamp(tcss.y / (u_res.y / u_dpr) + n, 0.0, 1.0);
+            ty = floor(ty / u_step + 0.5) * u_step;
+            // The floor: past it the tile is the page colour (ramp end)
+            if (tcss.y + (hash(tile + 3.0) - 0.5) * u_floor_rag > u_floor) ty = 1.0;
+            vec3  mc = texture2D(u_ramp, vec2(ty, 0.5)).rgb;
+            mc = clamp((mc - 0.5) * u_contrast + 0.5 + u_bright, 0.0, 1.0);
+
+            // Cursor: the same tile, richer — chroma scaled about its own
+            // luminance, slightly dimmed so the yellow doesn't clip to white
+            float lum   = dot(mc, vec3(0.299, 0.587, 0.114));
+            vec3  rich  = mix(vec3(lum), mc, u_cur_chroma) * 0.93;
+            rich *= vec3(1.0 + 0.5 * u_cur_warmth, 1.0, 1.0 - u_cur_warmth);
+            rich  = clamp(rich, 0.0, 1.0);
+            // Only tiles that have colour get richer — a white tile has no
+            // chroma to scale, and dimming it would leave a grey haze
+            float has = smoothstep(0.03, 0.18, length(mc - vec3(lum)));
+            mc = mix(mc, rich, ck * u_cur_vivid * has);
+
+            // The grid: the first u_gappx of each tile, both axes, toward --bg
+            vec2  inCell = mod(gl_FragCoord.xy, u_cellpx);
+            float gap    = max(step(inCell.x, u_gappx), step(inCell.y, u_gappx));
+            mc = mix(mc, u_bg, gap * u_grid);
+
+            q = mix(col, mc, u_mstrength);
+          } else {
+            // One threshold for all three channels — Figma uses a single tile
+            // sample per cell. The colour in the speckle comes from the channels
+            // sitting at different distances from their quantisation step, not
+            // from per-channel noise.
+            vec2  cell = floor(gl_FragCoord.xy / u_dot);
+            float th   = texture2D(u_noise, (mod(cell, u_tile) + 0.5) / u_tile).r;
+            q = vec3(quantize(col.r, th),
+                     quantize(col.g, th),
+                     quantize(col.b, th));
+            q = mix(col, q, u_strength);
+          }
+
+          // Frame opacity comes last, as it does in Figma — after the dither,
+          // not before it.
+          float op = u_mosaic > 0.5 ? u_mopacity : u_opacity;
+          gl_FragColor = vec4(mix(u_bg, q, op), 1.0);
+        }
+      `;
+
+      // The canvas renders the dithered band, so it runs everywhere. Only the
+      // cursor trail is gated: on touch a tap fires pointermove, which punched
+      // a cleared circle wherever you tapped, and pointerleave never fires
+      // there, so the next tap drew a streak between the two.
+      const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+      const interactive = CURSOR_PUSH && finePointer.matches && !stillMotion.matches;
+
+      const gl = push.getContext("webgl", {
+        alpha: false, antialias: false, depth: false,
+      });
+
+      if (!gl) {
+        push.remove();          // the CSS band shows through unchanged
+      } else {
+        function compile(type, src) {
+          const sh = gl.createShader(type);
+          gl.shaderSource(sh, src);
+          gl.compileShader(sh);
+          return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null;
+        }
+        const vs = compile(gl.VERTEX_SHADER, VERT);
+        const fs = compile(gl.FRAGMENT_SHADER, FRAG);
+        const prog = vs && fs ? gl.createProgram() : null;
+        if (prog) {
+          gl.attachShader(prog, vs);
+          gl.attachShader(prog, fs);
+          gl.linkProgram(prog);
+        }
+
+        if (!prog || !gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+          push.remove();
+        } else {
+          gl.useProgram(prog);
+
+          const quad = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+          gl.bufferData(gl.ARRAY_BUFFER,
+            new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+          const aPos = gl.getAttribLocation(prog, "a_pos");
+          gl.enableVertexAttribArray(aPos);
+          gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+          // Bake the ramp into a 256x1 texture the shader can look up.
+          // Rebaked when the phone breakpoint is crossed (see RAMP_PHONE).
+          const strip = document.createElement("canvas");
+          strip.width = 256;
+          strip.height = 1;
+          const sctx = strip.getContext("2d");
+          const tex = gl.createTexture();
+          function bakeRamp() {
+            const grad = sctx.createLinearGradient(0, 0, 256, 0);
+            (phoneRamp.matches ? RAMP_PHONE : RAMP).forEach(([at, hex]) => grad.addColorStop(at, hex));
+            sctx.fillStyle = grad;
+            sctx.fillRect(0, 0, 256, 1);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, strip);
+          }
+          bakeRamp();
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+          const U = (n) => gl.getUniformLocation(prog, n);
+
+          const noiseTex = gl.createTexture();
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, noiseTex);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, TILE, TILE, 0,
+            gl.RGBA, gl.UNSIGNED_BYTE, blueNoiseTile(TILE));
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+          // NEAREST: the tile is thresholds, not an image — interpolating
+          // between them would smear the noise back into a gradient.
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+          gl.uniform1i(U("u_ramp"), 0);
+          gl.uniform1i(U("u_noise"), 1);
+          gl.uniform1f(U("u_tile"), TILE);
+          gl.uniform1f(U("u_levels"), LEVELS);
+          gl.uniform1f(U("u_contrast"), CONTRAST);
+          gl.uniform1f(U("u_bright"), (BRIGHTNESS - 100) / 200);
+          gl.uniform1f(U("u_opacity"), OPACITY);
+          gl.uniform1f(U("u_strength"), STRENGTH);
+          gl.uniform1f(U("u_mosaic"), MOSAIC ? 1 : 0);
+          gl.uniform1f(U("u_grid"), MOSAIC_GRID);
+          gl.uniform1f(U("u_amp"), MOSAIC_AMP);
+          gl.uniform1f(U("u_jitter"), MOSAIC_JITTER);
+          gl.uniform1f(U("u_mstrength"), MOSAIC_STRENGTH);
+          gl.uniform1f(U("u_mopacity"), MOSAIC_OPACITY);
+          gl.uniform1f(U("u_cur_r"), MOSAIC_CURSOR_R);
+          gl.uniform1f(U("u_cur_amp"), MOSAIC_CURSOR_AMP);
+          gl.uniform1f(U("u_cur_vivid"), MOSAIC_CURSOR_VIVID);
+          gl.uniform1f(U("u_cur_chroma"), MOSAIC_CURSOR_CHROMA);
+          gl.uniform1f(U("u_cur_warmth"), MOSAIC_CURSOR_WARMTH);
+          gl.uniform1f(U("u_step"), MOSAIC_STEP);
+          gl.uniform3f(U("u_cursor"), -9999, -9999, 0);
+          gl.uniform1f(U("u_time"), 0);
+
+          const bgHex = getComputedStyle(document.documentElement)
+            .getPropertyValue("--bg").trim() || "#ffffff";
+          const bgRgb = [1, 3, 5].map((i) => parseInt(bgHex.slice(i, i + 2), 16) / 255);
+          gl.uniform3f(U("u_bg"), bgRgb[0], bgRgb[1], bgRgb[2]);
+
+          let dpr = 1, reach = 0;
+
+          function size() {
+            dpr = window.devicePixelRatio || 1;
+            reach = document.querySelector(".sky-gradient").offsetHeight;
+            push.style.height = reach + "px";
+            push.width  = Math.round(push.offsetWidth * dpr);
+            push.height = Math.round(reach * dpr);
+            gl.viewport(0, 0, push.width, push.height);
+            gl.uniform2f(U("u_res"), push.width, push.height);
+            gl.uniform1f(U("u_dot"), Math.max(1, DOT * dpr));
+            gl.uniform1f(U("u_dpr"), dpr);
+            gl.uniform1f(U("u_cellpx"), Math.max(2, Math.round(MOSAIC_CELL * dpr)));
+            gl.uniform1f(U("u_gappx"), Math.max(1, Math.round(MOSAIC_GAP * dpr)));
+            const pill = document.querySelector(".filter-btn");
+            const floor = pill ? pill.getBoundingClientRect().top + window.scrollY - MOSAIC_FLOOR_GAP : reach;
+            gl.uniform1f(U("u_floor"), floor);
+            gl.uniform1f(U("u_floor_rag"), MOSAIC_FLOOR_RAG);
+            gl.uniform1f(U("u_push"), PUSH_PX * dpr);
+            gl.uniform1f(U("u_radius"), RADIUS * dpr);
+
+            draw();
+          }
+
+          // A decaying list of recent cursor points. Same idea as the old
+          // canvas trail — the tail is emergent from the decay rate, not
+          // scripted — but each point now shoves the gradient as well as
+          // clearing it.
+          const DECAY = 0.972;   // per frame; lower = shorter tail
+          const pts = [];        // {x, y, s} in device px
+          const buf = new Float32Array(TRAIL * 3);
+          let last = null;
+          let running = false;
+
+          function addPoint(x, y) {
+            // Interpolate, or a fast flick leaves dots instead of a stroke
+            if (last) {
+              const steps = Math.min(12, Math.ceil(Math.hypot(x - last.x, y - last.y) / (SPACING * dpr)));
+              for (let i = 1; i < steps; i += 1) {
+                pts.push({
+                  x: last.x + ((x - last.x) * i) / steps,
+                  y: last.y + ((y - last.y) * i) / steps,
+                  s: 1,
+                });
+              }
+            }
+            pts.push({ x, y, s: 1 });
+            last = { x, y };
+          }
+
+          function draw() {
+            buf.fill(0);
+            const live = pts.slice(-TRAIL);   // freshest survive the cap
+            live.forEach((pt, i) => {
+              buf[i * 3] = pt.x;
+              buf[i * 3 + 1] = pt.y;
+              buf[i * 3 + 2] = pt.s;
+            });
+            gl.uniform3fv(U("u_pts"), buf);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+          }
+
+          function tick() {
+            for (let i = pts.length - 1; i >= 0; i -= 1) {
+              pts[i].s *= DECAY;
+              if (pts[i].s < 0.01) pts.splice(i, 1);
+            }
+            draw();
+            if (pts.length) {
+              requestAnimationFrame(tick);
+            } else {
+              running = false;
+              draw();            // one clean frame with nothing left
+            }
+          }
+
+          function wake() {
+            if (!running) { running = true; requestAnimationFrame(tick); }
+          }
+
+          size();
+          window.addEventListener("resize", size);
+          phoneRamp.addEventListener("change", () => { bakeRamp(); size(); });
+
+          // Mosaic drift. Its own rAF loop, yielding to the trail's tick()
+          // while that's drawing. Paused while the tab is hidden or the band
+          // is scrolled away; still under prefers-reduced-motion.
+          const flowing = MOSAIC && MOSAIC_SPEED > 0 && !stillMotion.matches;
+          const flowStart = performance.now();
+          let flowRaf = 0;
+
+          // Cursor eased toward its target each frame, strength eased to 1
+          // while it's over the band and 0 once it's gone, so the warm spot
+          // glides and fades rather than snapping.
+          const cur = { x: -9999, y: -9999, s: 0 };
+          const curTarget = { x: -9999, y: -9999, s: 0 };
+
+          function flowFrame(now) {
+            flowRaf = 0;
+            gl.uniform1f(U("u_time"), ((now - flowStart) / 1000) * MOSAIC_SPEED);
+            if (MOSAIC_CURSOR) {
+              if (cur.s < 0.001 && curTarget.s > 0) { cur.x = curTarget.x; cur.y = curTarget.y; }
+              cur.x += (curTarget.x - cur.x) * 0.14;
+              cur.y += (curTarget.y - cur.y) * 0.14;
+              cur.s += (curTarget.s - cur.s) * (curTarget.s > cur.s ? 0.10 : 0.05);
+              gl.uniform3f(U("u_cursor"), cur.x, cur.y, cur.s);
+            }
+            if (!running) draw();
+            flowQueue();
+          }
+
+          function flowQueue() {
+            if (!flowing || flowRaf) return;
+            if (document.hidden || window.scrollY >= reach) return;
+            flowRaf = requestAnimationFrame(flowFrame);
+          }
+
+          flowQueue();
+          document.addEventListener("visibilitychange", flowQueue);
+          window.addEventListener("scroll", flowQueue, { passive: true });
+
+          if (flowing && MOSAIC_CURSOR && finePointer.matches) {
+            window.addEventListener("pointermove", (e) => {
+              if (e.pointerType !== "mouse") return;
+              const y = e.clientY + window.scrollY;
+              curTarget.x = e.clientX + window.scrollX;
+              curTarget.y = y;
+              curTarget.s = y < reach ? 1 : 0;
+            }, { passive: true });
+            document.addEventListener("pointerleave", () => { curTarget.s = 0; });
+          }
+
+          if (interactive) {
+            window.addEventListener("pointermove", (e) => {
+              if (e.pointerType !== "mouse") return;   // belt and braces
+              const y = e.clientY + window.scrollY;
+              if (y > reach) { last = null; return; }
+              addPoint((e.clientX + window.scrollX) * dpr, y * dpr);
+              wake();
+            }, { passive: true });
+
+            // Forget where the cursor was, or re-entering draws one long
+            // streak interpolated across the gap.
+            document.addEventListener("pointerleave", () => { last = null; });
+          }
+
+        }
+      }
+
+      // ── Entry multiselect ─────────────────────────────────
+      // A listbox, not a native <select multiple>: that can't render
+      // "Paid, Invite only" on one line and looks nothing like the other
+      // fields. The hidden input carries the joined value into the form.
+      //
+      // No Escape-to-close handler — writing one tripped a false positive in
+      // the secrets scanner (it read the DOM property as a ".key" file), and
+      // Harsha asked me to leave that rule alone rather than reword around it.
+      // Clicking outside closes the panel; Escape still closes the dialog.
+      const entrySelect = document.getElementById("entry-select");
+      const entryTrigger = entrySelect.querySelector(".multiselect-trigger");
+      const entryMenu = entrySelect.querySelector(".multiselect-menu");
+      const entryValue = entrySelect.querySelector(".multiselect-value");
+      const entryInput = entrySelect.querySelector("input[type=hidden]");
+      const entryOpts = Array.from(entrySelect.querySelectorAll(".multiselect-option"));
+
+      function syncEntry() {
+        const picked = entryOpts
+          .filter((o) => o.getAttribute("aria-selected") === "true")
+          .map((o) => o.dataset.value);
+        entryInput.value = picked.join(", ");
+        entryValue.textContent = picked.length ? picked.join(", ") : "Free";
+        entryValue.classList.toggle("is-empty", picked.length === 0);
+      }
+
+      // The menu is position: fixed to escape the dialog's scroll clipping,
+      // so it has to be placed by hand against the trigger.
+      function placeEntryMenu() {
+        const r = entryTrigger.getBoundingClientRect();
+        entryMenu.style.left = r.left + "px";
+        entryMenu.style.width = r.width + "px";
+        const need = entryMenu.offsetHeight;
+        const room = window.innerHeight - r.bottom;
+        entryMenu.style.top = (room < need + 8 && r.top > need + 8)
+          ? r.top - need - 4 + "px"      // flip above when it won't fit below
+          : r.bottom + 4 + "px";
+      }
+
+      function openEntry(open) {
+        entryMenu.hidden = !open;
+        entryTrigger.setAttribute("aria-expanded", String(open));
+        entrySelect.classList.toggle("is-open", open);
+        if (open) placeEntryMenu();
+      }
+
+      window.addEventListener("resize", () => {
+        if (!entryMenu.hidden) placeEntryMenu();
+      });
+
+      entryTrigger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openEntry(entryMenu.hidden);
+      });
+
+      entryOpts.forEach((opt) => {
+        opt.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const on = opt.getAttribute("aria-selected") === "true";
+          opt.setAttribute("aria-selected", String(!on));
+          syncEntry();          // stays open — you pick several
+        });
+      });
+
+      document.addEventListener("click", () => openEntry(false));
+
+      submitModal.addEventListener("scroll", () => {
+        if (!entryMenu.hidden) placeEntryMenu();
+      }, { passive: true });
+
+      syncEntry();
 
       // ── Submit form ───────────────────────────────────────
       const form = document.getElementById("submit-form");

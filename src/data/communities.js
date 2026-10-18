@@ -5,7 +5,7 @@ export const communities = [
   {
     name: "Creative Mornings Chennai",
     description: "A breakfast meetup with talks from the creative community",
-    categories: ["Arts", "Conversations"],
+    categories: ["Arts", "General"],
     entry: "Free",
     frequency: "Monthly",
     link: "https://www.instagram.com/chennai_cm/",
@@ -125,7 +125,7 @@ export const communities = [
   {
     name: "Koodal Community",
     description: "A safe space for open conversations and connection.",
-    categories: ["Conversations"],
+    categories: ["General"],
     entry: "Free, Paid",
     frequency: "Weekly",
     link: "https://www.instagram.com/koodalcommunity/?hl=en",
@@ -205,7 +205,7 @@ export const communities = [
   {
     name: "Think Black Brush",
     description: "Beginner-friendly art and calligraphy workshops",
-    categories: ["Arts & crafts"],
+    categories: ["Arts"],
     entry: "Paid",
     frequency: "Ad hoc",
     link: "https://www.instagram.com/thinblackbrush/",
@@ -253,22 +253,23 @@ export const communities = [
 ];
 
 // Pill order matches the Figma design
+// The Entry values a submission can carry. An entry may hold more than one
+// ("Free, Paid"), so the submit form offers these as checkboxes and joins the
+// picked ones with ", " — matching how `entry` is stored above.
+export const entryOptions = ["Free", "Paid", "Invite only"];
+
 export const filterCategories = [
   "All",
   "General",
-  "Conversations",
   "Literature",
   "Food",
   "Arts",
-  "Design",
-  "Tech",
   "Sports",
-  "Stationery",
+  "Film",
   "History",
   "Architecture",
   "Culture",
   "Performance arts",
   "Life science",
-  "Film",
   "Marketing",
 ];
