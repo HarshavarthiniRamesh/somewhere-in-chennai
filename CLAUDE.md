@@ -5,8 +5,7 @@ meetups. Designed by Harsha, built with Claude Code. "Somewhere in Chennai" is
 the project's name; the site's own title is **"Not home. Not work. / But the
 secret third thing."** (two lines, hard break, Figma `956:142`) since
 2026-10-10, after a day as "Chennai Communities Guide". The tagline is "A
-curated list of communities and activities in Chennai to help you find your
-people. I hope you find what you're looking for here :)".
+directory of communities and activities in Chennai." since 2026-10-22.
 
 ## Commands
 
@@ -47,7 +46,8 @@ in both places to appear as a pill.
 That order is also what packs the pills tidily when they wrap — Figma moved
 `Film` up between `Sports` and `History` to fill a row on a 440px screen.
 Reordering the list changes how the rows break, so treat it as a layout
-decision, not just an alphabetical one.
+decision, not just an alphabetical one. (On a phone the pills scroll in
+one row, so there the order is just reading order.)
 
 ### `src/pages/index.astro`
 
@@ -80,10 +80,8 @@ lets the browser clamp before anything can stop it. Sorting calls
 motion. Earlier cuts (no fade-out, 260ms; then a 160ms fade-out, 420ms, no
 height glide) were both too abrupt for Harsha.
 
-Both buttons' labels are windows onto the hero wash (`.btn-ink`, aligned to
-page coordinates by the "Submit button ink" script, which handles every
-`.btn-ink`): Submit's always, About's only while it fills on hover
-(`.is-hover-only`).
+Both nav buttons are cream-outlined; Submit is filled cream, and About fills
+on hover.
 
 The desktop table is one CSS grid on `.community-table`, with `.table-head` and
 each `.community-row` adopting its tracks via `grid-template-columns: subgrid`.
@@ -102,6 +100,8 @@ left a large gap before Category.
 
 Rows stay real boxes rather than `display: contents`, so they can carry their
 own background and border.
+
+Header labels are `--text-muted`, a step back from the cream rows.
 
 Header and body cells share the 20px left padding, but the sort arrow's ink
 starts 2.5px into its 11px icon box while text stems start 1.5px in, so the
@@ -130,8 +130,9 @@ the hero type is fluid rather than stepped, so nothing jumps across one.
 **Neither line of the title may wrap** — Harsha's hard rule, carried over
 from the one-line title. The title is two lines by design, with a `<br>` in
 the markup and `white-space: nowrap`, so "two lines" is the ceiling, not a
-failure. The size is `min(64px, ceiling)` at every breakpoint: 64px is the
-design size (Figma `956:142`, 1.1 line height, 18px to the tagline), and the
+failure. The size is `min(48px, ceiling)` on desktop and tablet: 48px is the
+design size (Figma `1063:4159`, 2026-10-23 — it was 64px; 18px to the
+tagline; line height 1.08, or 1.1 on phones), and the
 ceiling is the widest the longer line can be and still fit on one line with
 5% to spare, so no width can wrap it. Ceilings are solved from the line's
 width-to-font-size ratio, **11.22 for "But the secret third thing."**
@@ -139,9 +140,10 @@ width-to-font-size ratio, **11.22 for "But the secret third thing."**
 `0.95 × (vw − gutters − anything else on the row) / 11.22`. That gives
 `8.47vw - 4.07px` on the phone (24px gutters), `8.47vw - 6.78px` on the
 tablet (40px), and `8.47vw - 19.31px` on the desktop (56px gutters plus the
-92px nav and a 24px gap beside it). The cap is the smaller term from 984px
-on the desktop row and 836px on the tablet; below that the ceiling rules —
-56px at 744, 33px at 440, 23px at 320. Re-measure the ratio and re-solve all
+92px nav and a 24px gap beside it). The 48px cap is the smaller term from 795px
+on the desktop row and 647px on the tablet; below that the ceiling rules —
+44px at 600, 33px at 440, 23px at 320 (the phone has no cap, just the
+ceiling). Re-measure the ratio and re-solve all
 three if the title text, the font or `--page-pad` ever change.
 
 The title sets only `SOFT` and `WONK` and lets `opsz` follow the size, as the
@@ -149,9 +151,11 @@ Figma text does; the modal title still pins `opsz 100`. It carries no
 optical margin: measured from pixels, the italic N and B start within half a
 pixel of the tagline's A. (The "Chennai…" title needed `-0.057em` for its C.)
 
-Tagline is `clamp(16px, calc(0.5747vw + 11.72px), 20px)` at every size — 20px at
-1440, 16px from 744 down — except below 600px, where it's set to 15px.
+Tagline is `clamp(16px, calc(0.5747vw + 11.72px), 18px)` at every size — 18px on
+the desktop (it was 20 until 2026-10-23), 16px from 744 down — except below 600px, where it's set to 15px.
 On a phone the pills start 160px below the buttons (Figma `986:19`).
+On desktop they sit at y 408 as in Figma `1063:3597` (203px under the
+hero).
 
 Tablet stacks the header (title, tagline, then both buttons) but keeps the
 desktop table and lets it scroll sideways. Only the phone restacks it. 1120px is
@@ -159,147 +163,94 @@ where the title, the nav and the page padding stopped fitting on one row
 with the original string (the longer title shrinks there instead; see above).
 
 The phone table is a different layout, not the desktop table shrunk: rows
-become a grid of `52px 1fr` with the number spanning three stacked lines —
+become a grid of `56px 1fr` with the number spanning three stacked lines —
 name, description, then a `.cell-meta` line joining category, entry and
 frequency as `A, B / Free / Monthly`. `.cell-meta` is built in the markup and
 hidden above 600px; `.cell-category`, `.cell-entry` and `.cell-freq` are hidden
 below it, and the table drops back to `display: block` so nothing scrolls
 sideways on a phone.
+Spacing and type follow Figma `987:24`: 18px top and bottom, name 16px
+medium, 6px, description 14px on 1.4 (two lines, then an ellipsis; rows grow
+with it — reserving two lines for every row was tried on 2026-10-18 and
+dropped), 10px, meta 14px in `#747474`.
 
-The hero wash's mask and veil are percentages, not pixels, so `--sky-reach`
-rescales the whole falloff; the script reads the band's rendered height.
-Below 600px `--sky-reach` is 640px rather than 948: the phone hero is
-about half as tall, and at full reach the tagline sat in the green and was
-hard to read. Shortening the band puts it in the cyan-to-white part of the
-ramp, as on desktop. That alone stopped the wash at the buttons, so the phone also
-has its own stops (`RAMP_PHONE` in the script, mirrored in the phone
-`--sky-tint`): the same colours, with the yellow-to-blue blend finishing
-above the tagline and the blue fading out over ~240px toward the pills.
+On a phone the filter pills are one row that scrolls sideways (Figma
+`987:89`, 6px gaps) rather than wrapping into five rows. The scroller runs
+edge to edge with the gutter as padding, scrollbar hidden; the pill cut off
+at the right edge is the cue that there's more. A tapped pill that's partly
+off screen is slid into view (`revealPill`, which scrolls the row only,
+not the page).
 
-Three typefaces, all self-hosted via `@fontsource-variable`: Geist (sans, body),
-Geist Mono (labels, numerals), Fraunces (display italic, accents).
+**Colour and page art** (Figma `1016:14`, 2026-10-22): an olive page
+(`--bg: #3D4013`), cream type (`--text: #DFD6C2`), tan dashed rules and pill
+outlines (`--line: #908262`), and `--text-muted: #B2AC91` (cream at 72% over
+the olive, 4.7:1) for secondary text. Row and pill hover are both the noise's olive, `#8A903A`, at 6% (Harsha wanted it very faint)
+(`--row-hover`, `--pill-hover`); cream at 6% read as a white film. Translucent
+on purpose: a solid
+`#3A3D14` was tried and hid the branch behind a hovered row, so the row
+looked cut out of the art. The table and footer
+rules aren't CSS dashed borders: Figma's dashes are 2px on, 4px off, sparser
+than the browser's, so they're a repeating gradient (`--rule`, `--rule-top`)
+measured off Figma's render. Pill outlines
+match: each pill has an inline `.filter-dash` SVG whose rect is stroked
+`2 4` round the 8px corners, on the line a 1px border would take (the
+real border is transparent and only holds the size). The dialogs re-theme themselves by
+resetting those custom properties, which re-themes everything inside them.
+The letter is white paper and keeps the original dark-on-white set. The
+submit card is the page's own material: the olive with 4% cream mixed in
+(`#434619`), a touch lighter and less saturated than the page, 8px
+corners, separated only by a soft shadow, on a `rgb(20 21 6 / 0.55)` scrim
+(0.3 left the page competing with the card). Cream type, a cream Submit button (the only bright thing in the
+card), and its own copy of the grain (the page's can't reach the top
+layer). Fields are plain inputs: a solid outline in cream at 20%, 55% on
+focus. Former greys are cream mixed into the olive: subtitle 90%, labels
+80%, placeholders 50%. Tried and dropped on 2026-10-22: an inverted beige
+card with green type (a flat slab); a lighter `#45491A` card on a dark scrim
+(it glowed and looked pasted on); a tan outline round the card, and the
+page's dashed outlines on the fields — Harsha: inputs are never dashed in
+real life. Keep the dashes to the table, pills and footer.
 
-`.sky-gradient` is the hero band: a single vertical ramp, `--sky-reach` (948px,
-the Figma frame height) tall. The stops come from node `919:11`'s **fill**, not
-from sampling a render — Figma writes them as `0deg` on a vertically flipped
-container, which nets out to the positions measured from the top.
+`.page-art` is a fixed, screen-sized layer behind the content, carrying the
+page colour. The page is flat olive under the grain, so a fixed olive layer
+looks identical — and being self-contained, it lets the browser scroll the
+page over the blended branch without re-blending every frame. (With only
+the branch fixed, blending against the scrolling page, it lagged and
+shifted on a phone.) It also has to carry the colour for the blend: it's
+its own stacking context, and the blend needs a backdrop inside it.
 
-Order matters and is easy to get backwards: Figma does gradient at full
-strength, then dither, then the frame's 80% opacity. The shader follows that.
-An earlier version used stops sampled off a rendered frame, which had the
-opacity already baked in — so it dithered a faded copy and looked dull, with
-the blue channel sitting at 130 instead of 58 at the top of the band.
+- **The flowering branch** (`public/art/flower.webp`), a greyscale print
+  with `mix-blend-mode: multiply` at 16% opacity (Figma `1039:1740`,
+  2026-10-23): a faint darker shadow in the page's own green. It replaced a
+  colour print with `mix-blend-mode: hue`, which turned the olive red-brown
+  where it lay. It stays at the top of the screen while the page
+  scrolls under it. Placement is per breakpoint, from Figma, as
+  `--flower-top/right/w/rot` (centre from the top and right edge): desktop
+  `1016:587` (71, 478, 578.75px of the 1440 frame, −73.11°, written as `vw`
+  so it scales with wide screens — fixed px left it tiny in the corner at
+  4K), tablet the same at 80%, phone
+  `1039:1848` (73.4, 195.8, 213.5px, −77.82°).
+- **Noise over the whole page**, as `body::after`, absolute and above the
+  content (z-index 1, no pointer events) as Figma's noise frame is — so
+  solid hover fills keep their grain. Figma's
+  noise frame at 8%, made with the Noise & Texture plugin (Duo tone,
+  `#8A903A`, 1px, 79% density). `public/art/noise.png` is a 512px crop of
+  the exported 1024px tile, cut to a 64-colour palette (~174KB) and drawn
+  1:1 so each dot is 1px. (Figma's own canvas stretches the tile to the
+  1440 frame, so its dots render at 1.4px.)
 
-`--sky-tint` in CSS holds the same ramp pre-composited at 80%, since it's only
-the no-WebGL fallback and the Submit button's ink, neither of which dithers.
+`body`
+must not have `height: 100%` — it did once, which capped it (and so the
+noise) at one screen while the content overflowed it; `min-height: 100dvh`
+alone keeps the footer down. Because
+the layer sits at `z-index: -1` under `body`, the page colour lives on
+`html` and `body` is transparent. The footer is a fixed 49px and sits at the
+bottom of the page or of the screen, whichever is lower.
 
-Read the fill and the effect out of Figma rather than eyeballing a render —
-sampling cost several wrong rounds here.
-
-`.sky-push` is a WebGL canvas over the band. It has two jobs, and they're
-independently switchable:
-
-- **Dither** (always on), ported from Figma's own effect source rather than
-  matched by eye. `get_design_context` on a node carrying a custom effect
-  returns that effect's implementation — use it instead of guessing from a
-  render. Node `919:11` gave: Blue Noise, pixelSize 2, levels 5, brightness
-  100, contrast 1.14, mono false.
-
-  Two things that are easy to get wrong, and were: the 64×64 blue-noise tile
-  is *generated*, not shipped — seeded white noise, three passes of
-  subtracting a 5×5 box blur, then rank-ordered — and it's sampled **once per
-  cell and shared by all three channels**. The colour in the speckle comes
-  from the channels sitting at different distances from their quantisation
-  step, not from per-channel noise. Cell size is CSS px scaled by DPR, or the
-  pattern disappears on a 2× screen.
-
-  One deliberate departure from Figma: `STRENGTH` (0.7) blends every cell
-  part-way back toward the smooth ramp after quantising. At full strength
-  the 2px speckle sits at the same scale as the 20px tagline and fights it.
-  Lowering the whole band's contrast keeps the texture uniform and visible;
-  0.45 went too faint in the yellow. A quiet zone that smoothed only the
-  patch behind the tagline was tried and rejected — Harsha found the local
-  hole looked worse than the noise. Don't bring it back.
-- **Mosaic** (`MOSAIC`, currently `false`), after the hero of craft.wild.as,
-  which Harsha asked for on 2026-10-08 and parked on 2026-10-10 ("isn't
-  working well for me") in favour of the Figma dither. The code is intact
-  behind the flag; everything below describes it switched on. Replaces the dither when on: the band becomes
-  8px flat tiles (`MOSAIC_CELL`) on a faint grid (`MOSAIC_GAP`,
-  `MOSAIC_GRID`). Each tile samples the ramp at its own height, nudged by a
-  three-octave value-noise field rotated 30° and squeezed along that axis so
-  it reads as diagonal bands (`MOSAIC_AMP`), plus a fixed per-tile scatter
-  (`MOSAIC_JITTER`) so single tiles flip early or late as a boundary passes
-  — without it whole rows stepped at once and it read as strata. The tile's
-  ramp *position* is then snapped to a multiple of `MOSAIC_STEP` (0.03 of
-  the band) and the ramp sampled there — about a dozen flat steps from
-  yellow through the greens to cyan, pale and white. An earlier cut rounded
-  each RGB channel to five levels instead, which collapsed the gradient to
-  yellow, one green and cyan; Harsha said it read as two colours. The tiles
-  have their own `MOSAIC_STRENGTH` (1, fully flat) and
-  `MOSAIC_OPACITY` (1, the ramp at full strength rather than the frame's
-  80%): a first cut reused the dither's 0.7 and 0.8 and Harsha found it dull
-  next to the reference. At full strength the tiles are still only the
-  ramp's own colours, so contrast against #343434 holds above 9:1.
-  The field drifts along the bands over `u_time` (`MOSAIC_SPEED`, 2.5); its
-  rAF loop yields to the trail's `tick()`, pauses while the tab is hidden or
-  the band is scrolled away, and is still under prefers-reduced-motion. The
-  ragged bottom edge is partly where the ramp turns white, and partly a
-  hard floor: every tile below the first pill's top minus `MOSAIC_FLOOR_GAP`
-  (20px) is forced to the page colour, edge scattered by `MOSAIC_FLOOR_RAG`.
-  Harsha's rule: the mosaic stays inside the hero, above the pills. The
-  floor is read from the DOM in `size()`, so it follows every breakpoint;
-  the cursor lift can't pull colour below it either.
-
-  **Cursor** (`MOSAIC_CURSOR`): a gaussian well of radius `MOSAIC_CURSOR_R`
-  (150px), shaped by the field so it pools as a blob rather than a disc,
-  that pushes tiles up the ramp by `MOSAIC_CURSOR_AMP` — so the tiles
-  around the pointer go yellower, in the ramp's own colours — and, on top of
-  that, makes each tile a richer version of itself: chroma scaled about its
-  own luminance by `MOSAIC_CURSOR_CHROMA` (2.4), dimmed 7% so the yellow
-  doesn't clip, and tilted warm by `MOSAIC_CURSOR_WARMTH` (0.3: red up by
-  half, blue down by all — golden yellow, aqua cyan), blended in by
-  `MOSAIC_CURSOR_VIVID`. Near enough the same hue that it reads
-  as the gradient intensifying; white tiles have no chroma, so it dies out
-  where the band does. Deepest tile stays above 7:1 against the copy. This
-  was Harsha's ask after the ramp-lift alone: "slightly vibrant, enhances
-  the gradient, doesn't disturb readability". The position
-  is eased each frame and the strength eases in over the band and out when
-  the pointer leaves, so the spot glides and fades. Harsha liked this
-  version for being fluid and gooey and staying inside the hero. A coral
-  accent colour was tried in its place on 2026-10-08 and rejected: it
-  looked random against the gradient, and circular and big. Deliberately
-  local — not the reference's long-press flood. Fine pointers only, for the
-  same touch reasons as `CURSOR_PUSH`, which displaces the smooth ramp and
-  stays off.
-- **No grain animation on the dither.** A slow drift of the blue-noise tile
-  across the ramp (colour static underneath) was built on 2026-10-06 and
-  removed the same day — Harsha didn't like how it looked. The mosaic above
-  is a different thing: the colour field moves, not the grain.
-- **Cursor push** (`CURSOR_PUSH`, currently `false`). A decaying list of recent
-  pointer positions, each shoving the wash outward and clearing to `--bg`.
-  Paused at Harsha's request; the code is intact, flip the flag to restore it.
-  It's additionally gated to fine pointers: on touch a tap fires `pointermove`,
-  which punched a cleared circle wherever you tapped, and `pointerleave` never
-  fires there, so the next tap drew a streak between the two.
-
-Because the canvas now draws the band rather than only decorating it, it runs
-on every device. If WebGL is missing it removes itself and the CSS
-`.sky-gradient` shows through — undithered, but correct.
-
-The stops live twice: as `--sky-tint` in CSS (fallback and button ink) and as
-`RAMP` in the script (baked into a 256×1 lookup texture), and the phone's
-set again as the phone `--sky-tint` and `RAMP_PHONE`. Change one, change
-the other.
-
-Because the band sits at `z-index: -1` under `body`, the page colour lives on
-`html` and `body` is transparent — moving `--bg` back to `body` hides it.
-
-The band and its canvas live inside `.sky-clip`, an absolute, overflow-hidden
-box filling `body` (which is `position: relative` for it). The band is a
-fixed 948px; unclipped, it stretched the document past the footer whenever
-the list was short, leaving empty scroll room under it. The footer is a
-fixed 49px and sits at the bottom of the page or of the screen, whichever
-is lower.
+This replaced the yellow-to-blue hero gradient: a WebGL band with Figma's
+blue-noise dither, a parked "mosaic" mode and cursor push, a phone-specific
+ramp, and the Submit label as a window onto the wash. All of that was
+removed on 2026-10-22; it's in git history at commit `23041ba` if it's ever
+wanted back.
 
 The About button opens a folded letter (Figma node `967:595`): a 480 × 679
 A4 sheet, square to the page — Harsha took the design's 4° tilt off — on the
@@ -329,7 +280,9 @@ height if that's taller (narrow phones); below 600px the tilt goes, the
 greeting may wrap and the dialog scrolls.
 
 The photos are real polaroids, not the design's rounded placeholder cards —
-Harsha asked for that: an 88px white card, 6px border with a 22px bottom, a
+Harsha asked for that: an 88px card (warm white `#FEFCF7` under the paper
+grain at 150px, so it reads as matte card stock — plain `#fff` looked like a
+sticker on the creamy paper), 6px border with a 22px bottom, a
 square print, 2px radius and a soft layered shadow. They fan into a straight
 row on hover (`@media (hover: hover)`); without hover a tap toggles
 `.is-spread` on all three copies of the group instead, and below 600px
@@ -353,7 +306,9 @@ looked shaky; Harsha wants the lines as clean as the photo. The scripts
 aren't in the repo; edit the path data directly to nudge a curve. The ink
 is `--ink: #214E81`, sampled from the core of the photographed line;
 stroke width 19 in an 861 × 993 viewBox, sized by height (92px) because
-the signature runs on a steep diagonal. Three copies exist (one per
+the signature runs on a steep diagonal. As drawn it rose at ~44°; Harsha
+found it too slanted, so the SVG is turned `rotate: 25deg` (to ~19°) rather
+than the path data being redrawn. Three copies exist (one per
 panel); only the first is exposed as an image ("Signed, Harsha").
 
 It opens as a trifold. The sheet is rendered three times in the Astro
@@ -366,7 +321,8 @@ The paper has a pressed-fibre grain, after the paper in Plum's founders'
 letter: `--paper-grain` is an SVG `feTurbulence` fractal noise lit with
 `feDiffuseLighting` (so it reads as a surface, not speckle), squeezed by
 `feComponentTransfer` into a narrow band near 1.0 and multiplied over
-`#FCFCFC`; `--paper-mottle` adds faint warm, slightly stretched clouding.
+`--paper`, a creamy white `#FBF8F0` since 2026-10-22 (it was `#FCFCFC`;
+the warmer one reads as real paper against the olive page); `--paper-mottle` adds faint warm, slightly stretched clouding.
 Current: frequency 0.42, 2 octaves, surface 1.3, light at 68°, squeezed
 to a 20% band; rendered mean ≈ 250, sd ≈ 1.5. This is the one Harsha
 prefers. Tried and rejected: 0.72/3 octaves (read as stucco), and a
@@ -431,9 +387,10 @@ environment's secrets scanner, which read the DOM property as a `.key` file.
 Clicking outside closes it, and Escape still closes the dialog itself.
 
 The submit dialog is built from Figma node `906:5559`: 590px wide, 24px/28px
-padding, `#F8F8F8` card on a `rgb(42 42 42 / 0.4)` scrim — that scrim looks
-green over the hero but is neutral; it was solved from the render against two
-known backgrounds rather than guessed. It has no close control, matching the
+padding (the card was `#F8F8F8` on a `rgb(42 42 42 / 0.4)` scrim until
+2026-10-22) — neutral; it was
+solved from the old render against two known backgrounds rather than
+guessed. It has no close control, matching the
 design; Esc is native to `<dialog>` and a backdrop click dismisses it. Width is
 capped (`min(590px, 100vw - 48px)`) rather than fixed, and the Entry/Social row
 stacks below 420px, which the 1440-only frame doesn't cover. It opens and

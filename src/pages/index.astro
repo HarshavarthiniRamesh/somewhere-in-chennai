@@ -67,30 +67,27 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
       content="A curated list of communities and activities in Chennai to help you find your people."
     />
     <title>Not home. Not work. But the secret third thing.</title>
+    <meta name="theme-color" content="#3D4013" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
 
   <body>
-    <!-- The band is 948px tall and absolute; the clip keeps it from
-         stretching the page when the list is short (it used to leave empty
-         scroll room below the footer). -->
-    <div class="sky-clip" aria-hidden="true">
-      <div class="sky-gradient"></div>
-      <canvas class="sky-push"></canvas>
+    <!-- Page art (Figma 1016:14): the flowering branch in the hero, blended
+         into the page colour, and a noise grain over the whole page. Clipped
+         to the page so the branch can't stretch it. -->
+    <div class="page-art" aria-hidden="true">
+      <img class="hero-flower" src="/art/flower.webp" alt="" width="512" height="1024" />
     </div>
 
     <!-- ── Header ───────────────────────────────────────── -->
     <header class="site-header">
       <div class="header-left">
         <h1 class="site-title">Not home. Not work.<br />But the secret third thing.</h1>
-        <p class="site-tagline">
-          A curated list of communities and activities in Chennai to help you find
-          your people. I hope you find what you’re looking for here :)
-        </p>
+        <p class="site-tagline">A directory of communities and activities in Chennai.</p>
       </div>
       <nav class="header-nav" aria-label="Site navigation">
-        <button class="nav-btn" id="about-btn"><span class="btn-ink is-hover-only">About</span></button>
-        <button class="nav-btn is-solid" id="submit-btn"><span class="btn-ink">Submit</span></button>
+        <button class="nav-btn" id="about-btn">About</button>
+        <button class="nav-btn is-solid" id="submit-btn">Submit</button>
       </nav>
     </header>
 
@@ -102,6 +99,7 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
           data-filter={cat === "All" ? "all" : cat}
         >
           {cat}
+          <svg class="filter-dash" aria-hidden="true"><rect width="100%" height="100%" rx="7.5" /></svg>
         </button>
       ))}
     </nav>
@@ -368,11 +366,25 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
         anim.onfinish = reset;
         anim.oncancel = reset;
       }
+      // On a phone the pills are one sideways-scrolling row; a tapped pill
+      // that's partly off screen slides fully into view. Only the row
+      // scrolls, never the page (scrollIntoView would move both).
+      const filterBar = document.querySelector(".filter-bar");
+      function revealPill(btn) {
+        if (filterBar.scrollWidth <= filterBar.clientWidth) return;
+        const bar = filterBar.getBoundingClientRect();
+        const r = btn.getBoundingClientRect();
+        const pad = parseFloat(getComputedStyle(filterBar).scrollPaddingInlineStart) || 0;
+        const behavior = stillRows.matches ? "auto" : "smooth";
+        if (r.left < bar.left + pad) filterBar.scrollBy({ left: r.left - bar.left - pad, behavior });
+        else if (r.right > bar.right - pad) filterBar.scrollBy({ left: r.right - bar.right + pad, behavior });
+      }
       document.querySelectorAll(".filter-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           if (btn.classList.contains("is-active")) return;
           document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("is-active"));
           btn.classList.add("is-active");
+          revealPill(btn);
           const token = ++filterToken;
           const showing = [...document.querySelectorAll(".community-row:not([hidden])")];
           if (stillRows.matches || !showing.length || !showing[0].animate) {
@@ -529,615 +541,6 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
         dialog.querySelector(".letter-close")?.addEventListener("click", () => closeAnimated(dialog));
         dialog.addEventListener("cancel", (e) => { e.preventDefault(); closeAnimated(dialog); });
       });
-
-      // ── Submit button ink ─────────────────────────────────
-      // Line the label's gradient up with the page's, so the letters read as a
-      // window onto the wash behind them. Page coordinates, not element ones —
-      // the button and the wash scroll together, so this only moves on resize.
-      // Both buttons have one: Submit's always shows, About's only on hover.
-      const inks = document.querySelectorAll(".btn-ink");
-
-      function alignInk() {
-        const reach = document.querySelector(".sky-gradient").offsetHeight;
-        inks.forEach((ink) => {
-          const r = ink.getBoundingClientRect();
-          ink.style.backgroundSize =
-            `${document.documentElement.clientWidth}px ${reach}px`;
-          ink.style.backgroundPosition =
-            `${-(r.left + window.scrollX)}px ${-(r.top + window.scrollY)}px`;
-        });
-      }
-
-      alignInk();
-      window.addEventListener("resize", alignInk);
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(alignInk);
-
-      // ── Hero gradient push ────────────────────────────────
-      // The cursor shoves the wash aside and it springs back. This has to be
-      // WebGL: displacement means sampling a pixel from a shifted position,
-      // which a CSS gradient or a 2D canvas can't do. The CSS .sky-gradient
-      // underneath is the fallback when WebGL is missing or motion is reduced.
-      //
-      // Only the vertical component displaces anything — the ramp is uniform
-      // across its width, so a sideways shift would be invisible.
-      const push = document.querySelector(".sky-push");
-      const stillMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-      // The gradient's real stops, straight from node 919:11's fill — NOT
-      // sampled off a render. Figma's order is: gradient at full strength ->
-      // dither -> frame opacity. Dithering an already-faded copy, which is
-      // what sampling gave, is why it looked dull.
-      //
-      // Figma writes it as 0deg on a vertically flipped container, which nets
-      // out to these positions measured from the top.
-      const RAMP = [
-        [0.000,  "#e9f23a"], [0.0353, "#e9f23a"],
-        [0.2007, "#c6edfd"], [0.3279, "#f5fbfe"],
-        [1.000,  "#ffffff"],
-      ];
-      // Phones (below 600px) use the same colours with the blue and the
-      // near-white moved: the yellow-to-blue blend still finishes above the
-      // tagline (~100px of the 640px band), but the blue then fades out over
-      // ~240px instead of ~80, so the wash reaches down toward the pills
-      // rather than stopping at the buttons. Mirrored in --sky-tint.
-      const RAMP_PHONE = [
-        [0.000,  "#e9f23a"], [0.0353, "#e9f23a"],
-        [0.156,  "#c6edfd"], [0.531,  "#f5fbfe"],
-        [1.000,  "#ffffff"],
-      ];
-      const phoneRamp = window.matchMedia("(max-width: 600px)");
-      const OPACITY = 0.8;     // the frame's Appearance opacity
-      const CURSOR_PUSH = false;  // paused — flip to true to bring the trail back
-
-      // Figma node 919:11's Dither effect, read from its own source:
-      // Blue Noise, pixelSize 2, levels 5, brightness 100, contrast 1.14,
-      // mono false. brightness maps to (value - 100) / 200.
-      const LEVELS     = 5;
-      const DOT        = 2;      // "Size" — CSS px per cell
-      const CONTRAST   = 1.14;
-      const BRIGHTNESS = 100;
-      const TILE       = 64;
-      // How hard the speckle reads against the ramp, 0..1. Figma's effect is
-      // 1 — every cell snapped fully to its quantised colour — which at body
-      // size fights the tagline. This blends each cell part-way back toward
-      // the smooth ramp: the pattern and its grain are unchanged, only its
-      // contrast drops. Applied everywhere, so the band stays one texture.
-      const STRENGTH   = 0.7;
-
-      // Mosaic mode (after craft.wild.as): instead of the 2px blue-noise
-      // dither, the band is a grid of flat tiles. Each tile takes the ramp
-      // colour at its own height, nudged up or down by a slow-moving noise
-      // field stretched along a diagonal, then snapped to the ramp's few
-      // flat colours — so bands of yellow, green, blue and white drift
-      // across the grid, and the bottom edge dissolves raggedly into the
-      // page where the ramp turns white. No cursor response, by request.
-      // Toned down for the hero copy: small amplitude, slow drift, and the
-      // same STRENGTH blend back toward the smooth ramp.
-      const MOSAIC       = false;  // parked 2026-10-10 — Harsha prefers the dither
-      const MOSAIC_CELL  = 8;      // CSS px per tile, grid gap included
-      const MOSAIC_GAP   = 1;      // CSS px of grid line between tiles
-      const MOSAIC_GRID  = 0.6;    // how far the gap goes toward --bg, 0..1
-      const MOSAIC_AMP   = 0.16;   // field amplitude, in fractions of band height
-      const MOSAIC_JITTER = 0.06;  // per-tile scatter, same units — ragged edges
-      const MOSAIC_SPEED = 2.5;    // drift rate; 1 ≈ a band every ~40s
-      // The tiles ignore STRENGTH and OPACITY: they're fully flat and at the
-      // ramp's full strength, not the frame's 80%. The first cut used both
-      // and Harsha found it dull — the reference is vivid, and the ramp's
-      // own colours at full strength still clear 9:1 against the copy.
-      const MOSAIC_STRENGTH = 1.0;
-      const MOSAIC_OPACITY  = 1.0;
-      // Tiles snap along the ramp, not per RGB channel: each tile's ramp
-      // position is rounded to a multiple of MOSAIC_STEP, then the ramp is
-      // sampled there. Per-channel rounding to five levels collapsed the
-      // gradient into yellow, one green and cyan; this walks it gradually,
-      // yellow → greens → cyan → pale → white, in about a dozen flat steps.
-      const MOSAIC_STEP = 0.03;    // fraction of band height per colour step
-      // Cursor: within this radius the field is pushed up the ramp, so the
-      // tiles around the pointer go yellower / more saturated in the ramp's
-      // own colours, and the push is shaped by the field so it pools as a
-      // blob rather than a disc. Settles back when the pointer leaves. A
-      // local effect only — not the reference's long-press flood. Fine
-      // pointers only, for the touch reasons CURSOR_PUSH hit. (An accent
-      // colour was tried here and rejected: it looked random against the
-      // gradient.)
-      const MOSAIC_CURSOR   = true;
-      const MOSAIC_CURSOR_R = 150;    // CSS px, gaussian radius
-      const MOSAIC_CURSOR_AMP = 0.16; // push, in fractions of band height
-      // On top of the lift, tiles near the pointer become richer versions
-      // of their own colour: chroma scaled up (MOSAIC_CURSOR_CHROMA, 1 = no
-      // change) with a touch less brightness so nothing clips. Same hue, so
-      // it reads as the gradient intensifying rather than a new colour.
-      // White tiles have no chroma to scale, so the effect dies out where
-      // the band does. Deepest tile stays above 7:1 against #343434.
-      const MOSAIC_CURSOR_VIVID  = 0.95; // 0..1, how far toward the rich version at the centre
-      const MOSAIC_CURSOR_CHROMA = 2.4;
-      // A warm tilt on the rich version: red up by half this, blue down by
-      // all of it. Yellow goes golden, cyan goes aqua. 0 = neutral.
-      const MOSAIC_CURSOR_WARMTH = 0.3;
-      // The tiles stop above the filter pills, whatever the ramp or the
-      // cursor is doing: every tile below the first pill's top minus this
-      // gap is the page colour, with the edge broken up by the tile
-      // scatter. Measured from the DOM in size(), so it follows the layout
-      // at every breakpoint. (The cursor lift can otherwise pull colour
-      // ~250px below where the ramp goes white — past the pills.)
-      const MOSAIC_FLOOR_GAP = 20;    // CSS px above the filter bar
-      const MOSAIC_FLOOR_RAG = 28;    // CSS px of ragged edge
-
-      // Figma builds its blue-noise tile at runtime rather than shipping one:
-      // seeded white noise, three passes of subtracting a 5x5 box blur (which
-      // kills the low frequencies), then rank-ordered to a flat distribution.
-      // Ported verbatim so the tile is bit-identical to the design's.
-      function mulberry32(seed) {
-        let a = seed >>> 0;
-        return function () {
-          a |= 0;
-          a = (a + 0x6D2B79F5) | 0;
-          let t = Math.imul(a ^ (a >>> 15), 1 | a);
-          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-      }
-
-      function blueNoiseTile(N) {
-        const rnd = mulberry32(0x9E3779B9);
-        const buf = new Float32Array(N * N);
-        for (let i = 0; i < buf.length; i += 1) buf[i] = rnd();
-        const tmp = new Float32Array(buf.length);
-        for (let pass = 0; pass < 3; pass += 1) {
-          for (let y = 0; y < N; y += 1) {
-            for (let x = 0; x < N; x += 1) {
-              let sum = 0, count = 0;
-              for (let dy = -2; dy <= 2; dy += 1) {
-                for (let dx = -2; dx <= 2; dx += 1) {
-                  sum += buf[((y + dy + N) % N) * N + ((x + dx + N) % N)];
-                  count += 1;
-                }
-              }
-              tmp[y * N + x] = sum / count;
-            }
-          }
-          for (let j = 0; j < buf.length; j += 1) buf[j] -= 0.5 * tmp[j];
-        }
-        // rank order, so the thresholds are uniformly spread over [0,1)
-        const idx = Array.from(buf.keys()).sort((a, b) => buf[a] - buf[b]);
-        const out = new Uint8Array(N * N * 4);
-        idx.forEach((cellIndex, rank) => {
-          const v = Math.round(((rank + 0.5) / buf.length) * 255);
-          out[cellIndex * 4] = v;
-          out[cellIndex * 4 + 1] = v;
-          out[cellIndex * 4 + 2] = v;
-          out[cellIndex * 4 + 3] = 255;
-        });
-        return out;
-      }
-
-      const PUSH_PX = 50;    // how far the wash is shoved right at the cursor
-      const RADIUS  = 62;    // brush width — same as the old canvas trail
-      const SPACING = 22;    // px between trail points; under the radius, so
-                             // they overlap into a stroke rather than dots
-
-      const VERT = `
-        attribute vec2 a_pos;
-        void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
-      `;
-
-      const TRAIL = 32;     // points kept; TRAIL x SPACING is the path length
-
-      const FRAG = `
-        precision mediump float;
-        #define TRAIL 32
-        uniform vec2      u_res;
-        uniform float     u_push;
-        uniform float     u_radius;
-        uniform sampler2D u_ramp;
-        uniform vec3      u_bg;
-        uniform vec3      u_pts[TRAIL];   // xy = device px, z = strength
-        uniform float     u_levels;
-        uniform float     u_dot;        // device px per cell (Figma "Size")
-        uniform float     u_contrast;
-        uniform float     u_bright;
-        uniform float     u_opacity;
-        uniform float     u_strength;   // speckle contrast against the ramp
-        uniform sampler2D u_noise;      // 64x64 blue-noise tile
-        uniform float     u_tile;
-        uniform float     u_mosaic;     // 1 = tile field, 0 = Figma dither
-        uniform float     u_cellpx;     // tile pitch, device px
-        uniform float     u_gappx;      // grid line, device px
-        uniform float     u_grid;       // grid line strength toward u_bg
-        uniform float     u_amp;        // field amplitude, ramp units
-        uniform float     u_jitter;     // per-tile scatter, ramp units
-        uniform float     u_mstrength;  // tile flatness, 0..1
-        uniform float     u_mopacity;   // tile opacity over u_bg
-        uniform vec3      u_cursor;     // xy = CSS px, z = strength 0..1
-        uniform float     u_cur_r;      // CSS px
-        uniform float     u_cur_amp;    // ramp units
-        uniform float     u_cur_vivid;  // 0..1
-        uniform float     u_cur_chroma; // chroma multiplier at the centre
-        uniform float     u_cur_warmth; // warm tilt of the rich version
-        uniform float     u_floor;      // CSS px: tiles below this are u_bg
-        uniform float     u_floor_rag;  // CSS px of scatter on that edge
-        uniform float     u_step;       // ramp units per colour step
-        uniform float     u_time;       // seconds
-        uniform float     u_dpr;
-
-        // Value noise, three octaves — enough for soft bands, cheap enough
-        // to run per fragment (the input is per tile, so neighbours share).
-        float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-        float vnoise(vec2 p) {
-          vec2 i = floor(p), f = fract(p);
-          f = f * f * (3.0 - 2.0 * f);
-          return mix(mix(hash(i),               hash(i + vec2(1.0, 0.0)), f.x),
-                     mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
-        }
-        float fbm(vec2 p) {
-          float v = 0.0, a = 0.5;
-          for (int i = 0; i < 3; i++) { v += a * vnoise(p); p = p * 2.03 + 17.1; a *= 0.5; }
-          return v;   // ~0.0–0.875, centred near 0.44
-        }
-
-        // Ported from Figma's own Dither source, so the maths matches rather
-        // than approximates: off = (t - 0.5) / L, then round to L steps.
-        float quantize(float c, float t) {
-          float L = u_levels - 1.0;
-          float off = (t - 0.5) / L;
-          return clamp(floor((c + off) * L + 0.5) / L, 0.0, 1.0);
-        }
-
-        void main() {
-          vec2  p     = vec2(gl_FragCoord.x, u_res.y - gl_FragCoord.y);
-          float clear = 0.0;
-          vec2  shove = vec2(0.0);
-
-          for (int i = 0; i < TRAIL; i++) {
-            vec3 pt = u_pts[i];
-            if (pt.z <= 0.0) continue;
-            vec2  d    = p - pt.xy;
-            float dist = length(d);
-            float fall = exp(-(dist * dist) / (u_radius * u_radius));
-            float w    = fall * pt.z;
-            clear = max(clear, w);                       // max, so overlapping
-            vec2 dir = dist > 0.5 ? d / dist : vec2(0.0, 1.0);
-            shove += dir * w;                            // points don't burn in
-          }
-
-          // Shove the colour outward along the whole trail, then clear what it
-          // was shoved off so the page shows through behind the cursor.
-          float dy  = clamp(shove.y, -2.0, 2.0) * u_push;
-          float sy  = clamp((p.y - dy) / u_res.y, 0.0, 1.0);
-          vec3  col = texture2D(u_ramp, vec2(sy, 0.5)).rgb;
-          col = mix(col, u_bg, clamp(clear, 0.0, 1.0));
-
-          col = clamp((col - 0.5) * u_contrast + 0.5 + u_bright, 0.0, 1.0);
-
-          vec3 q;
-          if (u_mosaic > 0.5) {
-            // Tile centre in CSS px, y down, so the field is the same size
-            // on every screen density.
-            vec2 tile = floor(gl_FragCoord.xy / u_cellpx);
-            vec2 tc   = (tile + 0.5) * u_cellpx;
-            vec2 tcss = vec2(tc.x, u_res.y - tc.y) / u_dpr;
-
-            // The field: rotated 30° and squeezed along that axis so it
-            // reads as diagonal bands, drifting slowly along them.
-            vec2 fq = tcss * 0.009;
-            fq = mat2(0.866, -0.5, 0.5, 0.866) * fq;
-            fq.x *= 0.35;
-            fq += u_time * vec2(0.025, 0.012);
-            // Smooth field plus a fixed per-tile scatter: the field moves
-            // the colour boundaries, the scatter makes single tiles flip
-            // early or late as a boundary passes, so edges stay ragged
-            // instead of stepping a whole row at once.
-            float n = (fbm(fq) - 0.44) * u_amp + (hash(tile) - 0.5) * u_jitter;
-
-            // Cursor: a gaussian well, shaped by the field so it's a blob
-            // not a disc, lifting the tiles up the ramp
-            vec2  cd = tcss - u_cursor.xy;
-            float ck = exp(-dot(cd, cd) / (u_cur_r * u_cur_r)) * u_cursor.z;
-            ck *= 0.55 + 1.1 * fbm(fq * 2.7 + 3.1);
-            ck  = clamp(ck, 0.0, 1.0);
-            n -= ck * u_cur_amp;
-
-            // The tile's ramp position, nudged by the field, snapped to a
-            // step — so neighbours sit one or two flat steps apart and the
-            // gradient still reads as a gradient across the grid.
-            float ty = clamp(tcss.y / (u_res.y / u_dpr) + n, 0.0, 1.0);
-            ty = floor(ty / u_step + 0.5) * u_step;
-            // The floor: past it the tile is the page colour (ramp end)
-            if (tcss.y + (hash(tile + 3.0) - 0.5) * u_floor_rag > u_floor) ty = 1.0;
-            vec3  mc = texture2D(u_ramp, vec2(ty, 0.5)).rgb;
-            mc = clamp((mc - 0.5) * u_contrast + 0.5 + u_bright, 0.0, 1.0);
-
-            // Cursor: the same tile, richer — chroma scaled about its own
-            // luminance, slightly dimmed so the yellow doesn't clip to white
-            float lum   = dot(mc, vec3(0.299, 0.587, 0.114));
-            vec3  rich  = mix(vec3(lum), mc, u_cur_chroma) * 0.93;
-            rich *= vec3(1.0 + 0.5 * u_cur_warmth, 1.0, 1.0 - u_cur_warmth);
-            rich  = clamp(rich, 0.0, 1.0);
-            // Only tiles that have colour get richer — a white tile has no
-            // chroma to scale, and dimming it would leave a grey haze
-            float has = smoothstep(0.03, 0.18, length(mc - vec3(lum)));
-            mc = mix(mc, rich, ck * u_cur_vivid * has);
-
-            // The grid: the first u_gappx of each tile, both axes, toward --bg
-            vec2  inCell = mod(gl_FragCoord.xy, u_cellpx);
-            float gap    = max(step(inCell.x, u_gappx), step(inCell.y, u_gappx));
-            mc = mix(mc, u_bg, gap * u_grid);
-
-            q = mix(col, mc, u_mstrength);
-          } else {
-            // One threshold for all three channels — Figma uses a single tile
-            // sample per cell. The colour in the speckle comes from the channels
-            // sitting at different distances from their quantisation step, not
-            // from per-channel noise.
-            vec2  cell = floor(gl_FragCoord.xy / u_dot);
-            float th   = texture2D(u_noise, (mod(cell, u_tile) + 0.5) / u_tile).r;
-            q = vec3(quantize(col.r, th),
-                     quantize(col.g, th),
-                     quantize(col.b, th));
-            q = mix(col, q, u_strength);
-          }
-
-          // Frame opacity comes last, as it does in Figma — after the dither,
-          // not before it.
-          float op = u_mosaic > 0.5 ? u_mopacity : u_opacity;
-          gl_FragColor = vec4(mix(u_bg, q, op), 1.0);
-        }
-      `;
-
-      // The canvas renders the dithered band, so it runs everywhere. Only the
-      // cursor trail is gated: on touch a tap fires pointermove, which punched
-      // a cleared circle wherever you tapped, and pointerleave never fires
-      // there, so the next tap drew a streak between the two.
-      const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-      const interactive = CURSOR_PUSH && finePointer.matches && !stillMotion.matches;
-
-      const gl = push.getContext("webgl", {
-        alpha: false, antialias: false, depth: false,
-      });
-
-      if (!gl) {
-        push.remove();          // the CSS band shows through unchanged
-      } else {
-        function compile(type, src) {
-          const sh = gl.createShader(type);
-          gl.shaderSource(sh, src);
-          gl.compileShader(sh);
-          return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null;
-        }
-        const vs = compile(gl.VERTEX_SHADER, VERT);
-        const fs = compile(gl.FRAGMENT_SHADER, FRAG);
-        const prog = vs && fs ? gl.createProgram() : null;
-        if (prog) {
-          gl.attachShader(prog, vs);
-          gl.attachShader(prog, fs);
-          gl.linkProgram(prog);
-        }
-
-        if (!prog || !gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-          push.remove();
-        } else {
-          gl.useProgram(prog);
-
-          const quad = gl.createBuffer();
-          gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-          gl.bufferData(gl.ARRAY_BUFFER,
-            new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
-          const aPos = gl.getAttribLocation(prog, "a_pos");
-          gl.enableVertexAttribArray(aPos);
-          gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-          // Bake the ramp into a 256x1 texture the shader can look up.
-          // Rebaked when the phone breakpoint is crossed (see RAMP_PHONE).
-          const strip = document.createElement("canvas");
-          strip.width = 256;
-          strip.height = 1;
-          const sctx = strip.getContext("2d");
-          const tex = gl.createTexture();
-          function bakeRamp() {
-            const grad = sctx.createLinearGradient(0, 0, 256, 0);
-            (phoneRamp.matches ? RAMP_PHONE : RAMP).forEach(([at, hex]) => grad.addColorStop(at, hex));
-            sctx.fillStyle = grad;
-            sctx.fillRect(0, 0, 256, 1);
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, strip);
-          }
-          bakeRamp();
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-          const U = (n) => gl.getUniformLocation(prog, n);
-
-          const noiseTex = gl.createTexture();
-          gl.activeTexture(gl.TEXTURE1);
-          gl.bindTexture(gl.TEXTURE_2D, noiseTex);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, TILE, TILE, 0,
-            gl.RGBA, gl.UNSIGNED_BYTE, blueNoiseTile(TILE));
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-          // NEAREST: the tile is thresholds, not an image — interpolating
-          // between them would smear the noise back into a gradient.
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-          gl.uniform1i(U("u_ramp"), 0);
-          gl.uniform1i(U("u_noise"), 1);
-          gl.uniform1f(U("u_tile"), TILE);
-          gl.uniform1f(U("u_levels"), LEVELS);
-          gl.uniform1f(U("u_contrast"), CONTRAST);
-          gl.uniform1f(U("u_bright"), (BRIGHTNESS - 100) / 200);
-          gl.uniform1f(U("u_opacity"), OPACITY);
-          gl.uniform1f(U("u_strength"), STRENGTH);
-          gl.uniform1f(U("u_mosaic"), MOSAIC ? 1 : 0);
-          gl.uniform1f(U("u_grid"), MOSAIC_GRID);
-          gl.uniform1f(U("u_amp"), MOSAIC_AMP);
-          gl.uniform1f(U("u_jitter"), MOSAIC_JITTER);
-          gl.uniform1f(U("u_mstrength"), MOSAIC_STRENGTH);
-          gl.uniform1f(U("u_mopacity"), MOSAIC_OPACITY);
-          gl.uniform1f(U("u_cur_r"), MOSAIC_CURSOR_R);
-          gl.uniform1f(U("u_cur_amp"), MOSAIC_CURSOR_AMP);
-          gl.uniform1f(U("u_cur_vivid"), MOSAIC_CURSOR_VIVID);
-          gl.uniform1f(U("u_cur_chroma"), MOSAIC_CURSOR_CHROMA);
-          gl.uniform1f(U("u_cur_warmth"), MOSAIC_CURSOR_WARMTH);
-          gl.uniform1f(U("u_step"), MOSAIC_STEP);
-          gl.uniform3f(U("u_cursor"), -9999, -9999, 0);
-          gl.uniform1f(U("u_time"), 0);
-
-          const bgHex = getComputedStyle(document.documentElement)
-            .getPropertyValue("--bg").trim() || "#ffffff";
-          const bgRgb = [1, 3, 5].map((i) => parseInt(bgHex.slice(i, i + 2), 16) / 255);
-          gl.uniform3f(U("u_bg"), bgRgb[0], bgRgb[1], bgRgb[2]);
-
-          let dpr = 1, reach = 0;
-
-          function size() {
-            dpr = window.devicePixelRatio || 1;
-            reach = document.querySelector(".sky-gradient").offsetHeight;
-            push.style.height = reach + "px";
-            push.width  = Math.round(push.offsetWidth * dpr);
-            push.height = Math.round(reach * dpr);
-            gl.viewport(0, 0, push.width, push.height);
-            gl.uniform2f(U("u_res"), push.width, push.height);
-            gl.uniform1f(U("u_dot"), Math.max(1, DOT * dpr));
-            gl.uniform1f(U("u_dpr"), dpr);
-            gl.uniform1f(U("u_cellpx"), Math.max(2, Math.round(MOSAIC_CELL * dpr)));
-            gl.uniform1f(U("u_gappx"), Math.max(1, Math.round(MOSAIC_GAP * dpr)));
-            const pill = document.querySelector(".filter-btn");
-            const floor = pill ? pill.getBoundingClientRect().top + window.scrollY - MOSAIC_FLOOR_GAP : reach;
-            gl.uniform1f(U("u_floor"), floor);
-            gl.uniform1f(U("u_floor_rag"), MOSAIC_FLOOR_RAG);
-            gl.uniform1f(U("u_push"), PUSH_PX * dpr);
-            gl.uniform1f(U("u_radius"), RADIUS * dpr);
-
-            draw();
-          }
-
-          // A decaying list of recent cursor points. Same idea as the old
-          // canvas trail — the tail is emergent from the decay rate, not
-          // scripted — but each point now shoves the gradient as well as
-          // clearing it.
-          const DECAY = 0.972;   // per frame; lower = shorter tail
-          const pts = [];        // {x, y, s} in device px
-          const buf = new Float32Array(TRAIL * 3);
-          let last = null;
-          let running = false;
-
-          function addPoint(x, y) {
-            // Interpolate, or a fast flick leaves dots instead of a stroke
-            if (last) {
-              const steps = Math.min(12, Math.ceil(Math.hypot(x - last.x, y - last.y) / (SPACING * dpr)));
-              for (let i = 1; i < steps; i += 1) {
-                pts.push({
-                  x: last.x + ((x - last.x) * i) / steps,
-                  y: last.y + ((y - last.y) * i) / steps,
-                  s: 1,
-                });
-              }
-            }
-            pts.push({ x, y, s: 1 });
-            last = { x, y };
-          }
-
-          function draw() {
-            buf.fill(0);
-            const live = pts.slice(-TRAIL);   // freshest survive the cap
-            live.forEach((pt, i) => {
-              buf[i * 3] = pt.x;
-              buf[i * 3 + 1] = pt.y;
-              buf[i * 3 + 2] = pt.s;
-            });
-            gl.uniform3fv(U("u_pts"), buf);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-          }
-
-          function tick() {
-            for (let i = pts.length - 1; i >= 0; i -= 1) {
-              pts[i].s *= DECAY;
-              if (pts[i].s < 0.01) pts.splice(i, 1);
-            }
-            draw();
-            if (pts.length) {
-              requestAnimationFrame(tick);
-            } else {
-              running = false;
-              draw();            // one clean frame with nothing left
-            }
-          }
-
-          function wake() {
-            if (!running) { running = true; requestAnimationFrame(tick); }
-          }
-
-          size();
-          window.addEventListener("resize", size);
-          phoneRamp.addEventListener("change", () => { bakeRamp(); size(); });
-
-          // Mosaic drift. Its own rAF loop, yielding to the trail's tick()
-          // while that's drawing. Paused while the tab is hidden or the band
-          // is scrolled away; still under prefers-reduced-motion.
-          const flowing = MOSAIC && MOSAIC_SPEED > 0 && !stillMotion.matches;
-          const flowStart = performance.now();
-          let flowRaf = 0;
-
-          // Cursor eased toward its target each frame, strength eased to 1
-          // while it's over the band and 0 once it's gone, so the warm spot
-          // glides and fades rather than snapping.
-          const cur = { x: -9999, y: -9999, s: 0 };
-          const curTarget = { x: -9999, y: -9999, s: 0 };
-
-          function flowFrame(now) {
-            flowRaf = 0;
-            gl.uniform1f(U("u_time"), ((now - flowStart) / 1000) * MOSAIC_SPEED);
-            if (MOSAIC_CURSOR) {
-              if (cur.s < 0.001 && curTarget.s > 0) { cur.x = curTarget.x; cur.y = curTarget.y; }
-              cur.x += (curTarget.x - cur.x) * 0.14;
-              cur.y += (curTarget.y - cur.y) * 0.14;
-              cur.s += (curTarget.s - cur.s) * (curTarget.s > cur.s ? 0.10 : 0.05);
-              gl.uniform3f(U("u_cursor"), cur.x, cur.y, cur.s);
-            }
-            if (!running) draw();
-            flowQueue();
-          }
-
-          function flowQueue() {
-            if (!flowing || flowRaf) return;
-            if (document.hidden || window.scrollY >= reach) return;
-            flowRaf = requestAnimationFrame(flowFrame);
-          }
-
-          flowQueue();
-          document.addEventListener("visibilitychange", flowQueue);
-          window.addEventListener("scroll", flowQueue, { passive: true });
-
-          if (flowing && MOSAIC_CURSOR && finePointer.matches) {
-            window.addEventListener("pointermove", (e) => {
-              if (e.pointerType !== "mouse") return;
-              const y = e.clientY + window.scrollY;
-              curTarget.x = e.clientX + window.scrollX;
-              curTarget.y = y;
-              curTarget.s = y < reach ? 1 : 0;
-            }, { passive: true });
-            document.addEventListener("pointerleave", () => { curTarget.s = 0; });
-          }
-
-          if (interactive) {
-            window.addEventListener("pointermove", (e) => {
-              if (e.pointerType !== "mouse") return;   // belt and braces
-              const y = e.clientY + window.scrollY;
-              if (y > reach) { last = null; return; }
-              addPoint((e.clientX + window.scrollX) * dpr, y * dpr);
-              wake();
-            }, { passive: true });
-
-            // Forget where the cursor was, or re-entering draws one long
-            // streak interpolated across the gap.
-            document.addEventListener("pointerleave", () => { last = null; });
-          }
-
-        }
-      }
 
       // ── Entry multiselect ─────────────────────────────────
       // A listbox, not a native <select multiple>: that can't render
