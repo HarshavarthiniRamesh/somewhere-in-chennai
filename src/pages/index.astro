@@ -72,6 +72,8 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
     <meta name="description" content={siteDescription} />
     <title>{siteTitle}</title>
     <meta name="theme-color" content="#3D4013" />
+    <!-- The root colour before the stylesheet arrives (see html in global.css) -->
+    <style is:inline>html { background-color: #40421D; }</style>
 
     <!-- Share preview: the hero as it first appears at 1200 × 630 -->
     <link rel="canonical" href={pageUrl} />

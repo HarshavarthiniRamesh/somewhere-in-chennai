@@ -253,7 +253,11 @@ must not have `height: 100%` — it did once, which capped it (and so the
 noise) at one screen while the content overflowed it; `min-height: 100dvh`
 alone keeps the footer down. Because
 the layer sits at `z-index: -1` under `body`, the page colour lives on
-`html` and `body` is transparent. The footer is a fixed 49px and sits at the
+`html` and `body` is transparent. `html` is `#40421D`, not `--bg`: it only
+shows in the gap Chrome reveals when you pull past the top on a trackpad,
+and the page reads as olive plus grain, which averages `#40421D` on screen.
+Plain `--bg` there showed as a flat, darker band. It's also inlined in the
+head so a reload has it from the first frame. The footer is a fixed 49px and sits at the
 bottom of the page or of the screen, whichever is lower.
 
 This replaced the yellow-to-blue hero gradient: a WebGL band with Figma's

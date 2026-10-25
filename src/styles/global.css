@@ -72,7 +72,13 @@ dialog.modal {
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
-  background-color: var(--bg);
+  /* Not var(--bg): this colour only shows where the page isn't — the gap
+     Chrome reveals when you pull past the top (or bottom) on a trackpad.
+     Everywhere else .page-art covers it. The page reads as olive plus the
+     grain, which averages #40421D on screen; plain --bg there showed as a
+     flat, darker band. Also inlined in the page head, so a reload has it
+     from the first frame. */
+  background-color: #40421D;
 }
 
 html {
