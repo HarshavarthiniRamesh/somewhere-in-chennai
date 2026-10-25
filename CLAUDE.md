@@ -408,14 +408,17 @@ closes with the short fade described under the About letter.
 
 ## Favicon
 
-A five-petal cherry blossom drawn as SVG paths (2026-10-25): cream
-`#DFD6C2` petals with a notch at each tip, a tan `#908262` centre, on an
-olive `#3D4013` tile with 14/64 rounded corners. Harsha wanted a simple
-flower emoji in the site's colours; a real emoji can't be recoloured and
-looks different on every platform, so it's drawn. `favicon.svg` is the
-source; `favicon.ico` (16/32/48) and `apple-touch-icon.png` (180, square
-corners, since iOS rounds them itself) are rasterised from it. Regenerate
-both if the SVG changes.
+A five-petal cherry blossom drawn as SVG paths (2026-10-25), petals
+notched at the tips, with a tan `#908262` centre. Just the flower, on a
+transparent background: Harsha found the first version's olive tile read
+as a ring with an odd shadow in a dark tab strip. The petals follow the
+browser theme via a `prefers-color-scheme` rule inside the SVG — olive
+`#3D4013` on light tabs, cream `#DFD6C2` on dark. A real emoji was the
+ask, but one can't be recoloured to the palette and differs per platform,
+so it's drawn. `favicon.ico` (16/32/48, olive petals, for browsers without
+SVG icons) is rasterised from the SVG; `apple-touch-icon.png` keeps the
+olive tile, because iOS fills a transparent home-screen icon with black.
+Regenerate them if the SVG changes.
 
 ## Share preview
 
