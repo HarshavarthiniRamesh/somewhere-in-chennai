@@ -409,18 +409,22 @@ closes with the short fade described under the About letter.
 ## Favicon
 
 A five-petal cherry blossom drawn as SVG paths (2026-10-25), petals
-notched at the tips, with a tan `#908262` centre. Just the flower, on a
-transparent background: Harsha found the first version's olive tile read
-as a ring with an odd shadow in a dark tab strip. The petals follow the
-browser theme via a `prefers-color-scheme` rule inside the SVG — olive
-`#3D4013` on light tabs, cream `#DFD6C2` on dark. A real emoji was the
-ask, but one can't be recoloured to the palette and differs per platform,
-so it's drawn. `favicon.ico` (16/32/48, olive petals, for browsers without
-SVG icons) is rasterised from the SVG; `apple-touch-icon.png` keeps the
-olive tile, because iOS fills a transparent home-screen icon with black.
-Regenerate them if the SVG changes, and bump the `?v=` on the three icon
-links in the head: browsers cache favicons hard, and a new URL is the only
-reliable way to make them refetch.
+notched at the tips: cream `#DFD6C2` petals with a thin olive `#3D4013`
+edge and a tan `#908262` centre, on a transparent background. The edge is
+what makes it work on any tab colour — a favicon can only detect light or
+dark mode, not the browser's actual tab colour (custom themes, Arc-style
+tinted bars), so the earlier version that switched olive/cream by
+`prefers-color-scheme` vanished on a dark custom tab in light mode. Before
+that, an olive tile read as a ring with an odd shadow in a dark tab strip.
+A real emoji was the ask, but one can't be recoloured to the palette and
+differs per platform, so it's drawn.
+
+`favicon.ico` (16/32/48, for browsers without SVG icons) is rasterised
+from the SVG; `apple-touch-icon.png` keeps an olive tile, because iOS
+fills a transparent home-screen icon with black. Regenerate them if the
+SVG changes, and bump the `?v=` on the three icon links in the head:
+browsers cache favicons hard, and a new URL is the only reliable way to
+make them refetch.
 
 ## Share preview
 

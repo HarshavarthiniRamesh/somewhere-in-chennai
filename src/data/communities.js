@@ -240,7 +240,7 @@ export const communities = [
     categories: ["Arts"],
     entry: "Free",
     frequency: "Ad hoc",
-    link: "",
+    link: "https://www.instagram.com/madrassketchclub/",
   },
 ];
 
