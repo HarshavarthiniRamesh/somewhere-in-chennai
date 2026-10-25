@@ -401,9 +401,24 @@ main {
   transition: background-color 100ms ease;
 }
 
-.community-row:hover {
+.community-row:hover,
+.community-row:focus-visible {
   background-color: var(--row-hover);
 }
+
+/* Keyboard focus: the hover state plus a cream ring drawn inside the row,
+   so it isn't clipped by the scrolling table. Mouse clicks don't show it. */
+.community-row:focus,
+.table-head .cell[data-sort]:focus {
+  outline: none;
+}
+
+.community-row:focus-visible,
+.table-head .cell[data-sort]:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: -1.5px;
+}
+
 
 /* The row's content eases a few pixels to the right on hover. Guarded by
    `hover: hover` so a tap on a touch screen doesn't leave it nudged, and
@@ -413,7 +428,8 @@ main {
     transition: transform 240ms cubic-bezier(0.2, 0.6, 0.4, 1);
   }
 
-  .community-row:hover .cell {
+  .community-row:hover .cell,
+  .community-row:focus-visible .cell {
     transform: translateX(4.5px);
   }
 }
@@ -422,7 +438,6 @@ main {
 .community-row[data-link]:not([data-link=""]) {
   cursor: pointer;
 }
-
 
 .community-row[hidden] {
   display: none;

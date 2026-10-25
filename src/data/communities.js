@@ -4,7 +4,7 @@
 export const communities = [
   {
     name: "Creative Mornings Chennai",
-    description: "A breakfast meetup with talks from the creative community",
+    description: "A breakfast meetup with talks from the creative community.",
     categories: ["Arts", "General"],
     entry: "Free",
     frequency: "Monthly",
@@ -12,19 +12,11 @@ export const communities = [
   },
   {
     name: "Bessy Reads",
-    description: "Silent reading sessions by the beach every Sunday",
+    description: "Silent reading sessions by the beach every Sunday.",
     categories: ["Literature"],
     entry: "Free",
     frequency: "Weekly",
     link: "https://www.instagram.com/bessyreads/",
-  },
-  {
-    name: "Hindustan Trading Company",
-    description: "Hands-on art workshops across different creative mediums",
-    categories: ["Arts"],
-    entry: "Paid",
-    frequency: "Ad hoc",
-    link: "https://www.instagram.com/hindustanonline/",
   },
   {
     name: "Madras Inherited",
@@ -36,7 +28,7 @@ export const communities = [
   },
   {
     name: "Madras Reads",
-    description: "Silent reading sessions at Secretariat's Park every Saturday",
+    description: "Silent reading sessions at Secretariat's Park every Saturday.",
     categories: ["Literature"],
     entry: "Free",
     frequency: "Weekly",
@@ -60,7 +52,7 @@ export const communities = [
   },
   {
     name: "Rue des arts",
-    description: "Heritage walks and sketching tours",
+    description: "Heritage walks and sketching tours.",
     categories: ["Arts", "Architecture"],
     entry: "Paid",
     frequency: "Ad hoc",
@@ -171,8 +163,8 @@ export const communities = [
     link: "https://www.instagram.com/onesidepaper/",
   },
   {
-    name: "Chittalapakkam Reads",
-    description: "Silent reading sessions by the lake.",
+    name: "Chitlapakkam Reads",
+    description: "Silent reading sessions by the Chitlapakkam lake.",
     categories: ["Literature"],
     entry: "Free",
     frequency: "Weekly",
@@ -180,7 +172,7 @@ export const communities = [
   },
   {
     name: "Nam Veedu Nam Ooru Nam Kadhai",
-    description: "Heritage walks uncovering Chennai's local stories",
+    description: "Heritage walks uncovering Chennai's local stories.",
     categories: ["Architecture", "History"],
     entry: "Free, Paid",
     frequency: "Weekly",
@@ -204,7 +196,7 @@ export const communities = [
   },
   {
     name: "Think Black Brush",
-    description: "Beginner-friendly art and calligraphy workshops",
+    description: "Beginner-friendly art and calligraphy workshops.",
     categories: ["Arts"],
     entry: "Paid",
     frequency: "Ad hoc",
@@ -212,19 +204,11 @@ export const communities = [
   },
   {
     name: "A Quiet Chapter",
-    description: "Silent reading sessions at Chennai's beloved Bask.",
+    description: "Silent reading sessions at Bask by Coffee.",
     categories: ["Literature", "Food"],
     entry: "Free",
     frequency: "Weekly",
     link: "https://www.instagram.com/the.quiet.chapter/",
-  },
-  {
-    name: "The Brief Exchange",
-    description: "Meetups for brand, marketing, and creative professionals.",
-    categories: ["Marketing"],
-    entry: "Paid",
-    frequency: "Monthly",
-    link: "https://www.instagram.com/thebriefexchange/",
   },
   {
     name: "Madras Cookbook Club",
@@ -249,6 +233,14 @@ export const communities = [
     entry: "Paid",
     frequency: "Monthly",
     link: "https://www.instagram.com/atebakehouse/",
+  },
+  {
+    name: "Madras Sketch Club",
+    description: "Monthly sketch meets for & by the people of Madras.",
+    categories: ["Arts"],
+    entry: "Free",
+    frequency: "Ad hoc",
+    link: "",
   },
 ];
 

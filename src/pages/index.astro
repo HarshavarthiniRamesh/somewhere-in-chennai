@@ -109,23 +109,23 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
       <div class="community-table">
         <div class="table-head">
           <div class="cell cell-num" aria-hidden="true"></div>
-          <div class="cell cell-head-name" data-sort="name">
+          <div class="cell cell-head-name" data-sort="name" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Community
           </div>
-          <div class="cell cell-description" data-sort="description">
+          <div class="cell cell-description" data-sort="description" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             What Happens
           </div>
-          <div class="cell cell-category" data-sort="category">
+          <div class="cell cell-category" data-sort="category" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Category
           </div>
-          <div class="cell cell-entry" data-sort="entry">
+          <div class="cell cell-entry" data-sort="entry" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Entry
           </div>
-          <div class="cell cell-freq" data-sort="freq">
+          <div class="cell cell-freq" data-sort="freq" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Frequency
           </div>
@@ -154,6 +154,7 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
         }
       </div>
     </main>
+
 
     <!-- ── Footer ───────────────────────────────────────── -->
     <footer class="site-footer">
@@ -460,6 +461,13 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
           allRows.forEach((row) => parent.appendChild(row));
 
           applyFilter();
+        });
+        // Headers are divs (they're grid cells), so give them a button's keys
+        header.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            header.click();
+          }
         });
       });
 
