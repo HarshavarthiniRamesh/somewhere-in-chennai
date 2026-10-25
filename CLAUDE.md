@@ -103,6 +103,13 @@ own background and border.
 
 Header labels are `--text-muted`, a step back from the cream rows.
 
+Keyboard: the sort headers are `div`s with `role="button"`, `tabindex="0"`
+and Enter/Space wired to their click. Rows with a link are Tab stops
+(Enter opens them). Both get a 1.5px cream ring inside the box on
+`:focus-visible` only, and a focused row takes the hover state too. Rows
+carry `scroll-margin-block: 168px` so a row tabbed into view lands clear of
+the screen edge.
+
 Header and body cells share the 20px left padding, but the sort arrow's ink
 starts 2.5px into its 11px icon box while text stems start 1.5px in, so the
 icon carries `margin-left: -1px` to put the arrow on the column's text line

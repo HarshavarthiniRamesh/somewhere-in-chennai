@@ -401,8 +401,28 @@ main {
   transition: background-color 100ms ease;
 }
 
-.community-row:hover {
+.community-row:hover,
+.community-row:focus-visible {
   background-color: var(--row-hover);
+}
+
+/* Keyboard focus: the hover state plus a cream ring drawn inside the row,
+   so it isn't clipped by the scrolling table. Mouse clicks don't show it. */
+.community-row:focus,
+.table-head .cell[data-sort]:focus {
+  outline: none;
+}
+
+.community-row:focus-visible,
+.table-head .cell[data-sort]:focus-visible {
+  outline: 1.5px solid var(--text);
+  outline-offset: -1.5px;
+}
+
+/* A row reached with Tab scrolls in with room to spare, so its preview
+   card (which overhangs the row) isn't cut off by the screen edge. */
+.community-row {
+  scroll-margin-block: 168px;
 }
 
 /* The row's content eases a few pixels to the right on hover. Guarded by
@@ -413,7 +433,8 @@ main {
     transition: transform 240ms cubic-bezier(0.2, 0.6, 0.4, 1);
   }
 
-  .community-row:hover .cell {
+  .community-row:hover .cell,
+  .community-row:focus-visible .cell {
     transform: translateX(4.5px);
   }
 }
@@ -421,6 +442,78 @@ main {
 
 .community-row[data-link]:not([data-link=""]) {
   cursor: pointer;
+}
+
+/* ─── Row hover preview ──────────────────────────────────── */
+/* After Figma `1073:4166` — 12px corners, tilted about −6°, the design's
+   two-layer shadow — at 136px rather than the design's 160. The wrapper
+   sits on the hovered row's top edge under the cursor (the script sets
+   `translate`; `.is-below` puts it on the bottom edge when there's no room
+   above). The card hangs clear of the row, centred on the cursor, and
+   does the fade, so the glide and the appearance don't fight
+   over one transform. The photos are stacked and crossfade between rows. */
+.row-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.row-preview-card {
+  position: relative;
+  width: 136px;
+  height: 136px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e6e6e6;
+  box-shadow:
+    0 1px 3px -3px rgba(0, 0, 0, 0.15),
+    0 1px 10.2px 0 rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, calc(-100% - 14px)) rotate(-6deg) scale(0.92);
+  opacity: 0;
+  transition:
+    opacity 180ms ease,
+    transform 260ms cubic-bezier(0.2, 0.6, 0.4, 1);
+}
+
+.row-preview.is-visible .row-preview-card {
+  opacity: 1;
+  transform: translate(-50%, calc(-100% - 14px)) rotate(-6deg) scale(1);
+}
+
+.row-preview.is-below .row-preview-card {
+  transform: translate(-50%, 14px) rotate(-6deg) scale(0.92);
+}
+
+.row-preview.is-below.is-visible .row-preview-card {
+  transform: translate(-50%, 14px) rotate(-6deg) scale(1);
+}
+
+.row-preview-card img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.row-preview-card img.is-active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-preview-card {
+    transition: opacity 180ms ease;
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
+  .row-preview {
+    display: none;
+  }
 }
 
 

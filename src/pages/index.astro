@@ -109,23 +109,23 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
       <div class="community-table">
         <div class="table-head">
           <div class="cell cell-num" aria-hidden="true"></div>
-          <div class="cell cell-head-name" data-sort="name">
+          <div class="cell cell-head-name" data-sort="name" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Community
           </div>
-          <div class="cell cell-description" data-sort="description">
+          <div class="cell cell-description" data-sort="description" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             What Happens
           </div>
-          <div class="cell cell-category" data-sort="category">
+          <div class="cell cell-category" data-sort="category" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Category
           </div>
-          <div class="cell cell-entry" data-sort="entry">
+          <div class="cell cell-entry" data-sort="entry" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Entry
           </div>
-          <div class="cell cell-freq" data-sort="freq">
+          <div class="cell cell-freq" data-sort="freq" role="button" tabindex="0">
             <svg class="cell-sort-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3v10M4 7l4-4 4 4"/></svg>
             Frequency
           </div>
@@ -154,6 +154,15 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
         }
       </div>
     </main>
+
+    <!-- Row hover preview (test: three sample photos, cycled down the rows) -->
+    <div class="row-preview" aria-hidden="true">
+      <div class="row-preview-card">
+        {[1, 2, 3].map((n) => (
+          <img src={`/communities/sample-${n}.webp`} alt="" width="480" height="480" />
+        ))}
+      </div>
+    </div>
 
     <!-- ── Footer ───────────────────────────────────────── -->
     <footer class="site-footer">
@@ -461,6 +470,13 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
 
           applyFilter();
         });
+        // Headers are divs (they're grid cells), so give them a button's keys
+        header.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            header.click();
+          }
+        });
       });
 
       // ── Row click → link ──────────────────────────────────
@@ -472,6 +488,99 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
         row.addEventListener("click", go);
         row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
       });
+
+      // ── Row hover preview ─────────────────────────────────
+      // A photo card for the row under the pointer. It sits just above that
+      // row (below it when there's no room above) so it never covers the row
+      // it's showing, and follows the cursor sideways. It eases into place
+      // rather than sticking, so moving down the list reads as one gliding
+      // card, and crossfades to the next row's photo. A row reached with Tab
+      // gets the same card over its description column; Escape dismisses it
+      // either way. Hover-capable pointers only; under
+      // reduced motion it jumps into place instead of gliding.
+      // Test: three sample photos, cycled by each row's original position.
+      const preview = document.querySelector(".row-preview");
+      if (preview && matchMedia("(hover: hover) and (pointer: fine)").matches) {
+        const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const photos = [...preview.querySelectorAll("img")];
+        let tx = 0, ty = 0, x = 0, y = 0, frame = 0;
+        let current = null; // the row the card belongs to
+        let byKey = false;  // placed by keyboard focus rather than the pointer
+
+        const place = () => {
+          preview.style.translate = `${x}px ${y}px`;
+        };
+        const step = () => {
+          x += (tx - x) * 0.18;
+          y += (ty - y) * 0.18;
+          place();
+          frame = Math.abs(tx - x) + Math.abs(ty - y) > 0.3 ? requestAnimationFrame(step) : 0;
+        };
+        // Room the card needs above a row: its height plus the gap
+        const ROOM = 136 + 24;
+        const aim = (px, row) => {
+          const box = row.getBoundingClientRect();
+          const below = box.top < ROOM;
+          preview.classList.toggle("is-below", below);
+          tx = px;
+          ty = below ? box.bottom : box.top;
+          if (still || !current) { x = tx; y = ty; place(); }
+          else if (!frame) frame = requestAnimationFrame(step);
+        };
+        const show = (row) => {
+          const n = rows.indexOf(row) % photos.length;
+          photos.forEach((img, i) => img.classList.toggle("is-active", i === n));
+          current = row;
+          preview.classList.add("is-visible");
+        };
+        const hide = () => {
+          current = null;
+          preview.classList.remove("is-visible");
+        };
+        // Keyboard anchor: over the start of the description column
+        const aimAtRow = (row) => {
+          const cell = row.querySelector(".cell-description").getBoundingClientRect();
+          aim(cell.left + 96, row);
+        };
+
+        rows.forEach((row) => {
+          row.addEventListener("pointerenter", (e) => {
+            byKey = false;
+            aim(e.clientX, row);
+            show(row);
+          });
+          row.addEventListener("pointermove", (e) => {
+            if (current === row && !byKey) aim(e.clientX, row);
+          });
+          row.addEventListener("pointerleave", (e) => {
+            if (byKey || e.relatedTarget?.closest?.(".community-row")) return;
+            hide();
+          });
+          row.addEventListener("focus", () => {
+            if (!row.matches(":focus-visible")) return;
+            byKey = true;
+            // Wait a frame so the browser has scrolled the row into view
+            requestAnimationFrame(() => {
+              if (document.activeElement !== row) return;
+              aimAtRow(row);
+              show(row);
+            });
+          });
+          row.addEventListener("blur", () => {
+            if (byKey && current === row) hide();
+          });
+        });
+
+        // Keep a keyboard-placed card on its row while the page scrolls
+        addEventListener("scroll", () => {
+          if (byKey && current) aimAtRow(current);
+          else if (current) hide();
+        }, { passive: true });
+
+        addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && current) hide();
+        });
+      }
 
       // ── About letter ──────────────────────────────────────
       // The panels are fixed slices of the sheet, so they need its height.
