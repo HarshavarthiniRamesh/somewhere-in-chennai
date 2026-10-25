@@ -406,6 +406,28 @@ capped (`min(590px, 100vw - 48px)`) rather than fixed, and the Entry/Social row
 stacks below 420px, which the 1440-only frame doesn't cover. It opens and
 closes with the short fade described under the About letter.
 
+## Favicon
+
+A five-petal cherry blossom drawn as SVG paths (2026-10-25): cream
+`#DFD6C2` petals with a notch at each tip, a tan `#908262` centre, on an
+olive `#3D4013` tile with 14/64 rounded corners. Harsha wanted a simple
+flower emoji in the site's colours; a real emoji can't be recoloured and
+looks different on every platform, so it's drawn. `favicon.svg` is the
+source; `favicon.ico` (16/32/48) and `apple-touch-icon.png` (180, square
+corners, since iOS rounds them itself) are rasterised from it. Regenerate
+both if the SVG changes.
+
+## Share preview
+
+`public/og.jpg` is the link-preview image (`og:image`, Twitter
+`summary_large_image`): the page as it first loads in a 1200 × 630 window,
+captured at 2× in headless Chrome and scaled down, dev toolbar removed.
+It's a screenshot, so it goes stale when the hero, pills or palette
+change — recapture it then. A hero-only version (pills and table hidden)
+was tried and was mostly empty olive. The tags need absolute URLs, built
+from `site` in `astro.config.mjs` (`https://nothome-notwork.vercel.app`);
+change that if the site lives elsewhere.
+
 ## Current state
 
 - The submit form posts to a Google Apps Script web app — `SHEET_ENDPOINT` at

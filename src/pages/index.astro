@@ -4,6 +4,13 @@ import { statSync } from "node:fs";
 import { communities, filterCategories, entryOptions } from "../data/communities.js";
 import "../styles/global.css";
 
+const siteTitle = "Not home. Not work. But the secret third thing.";
+const siteDescription =
+  "A curated list of communities and activities in Chennai to help you find your people.";
+// Absolute, from `site` in astro.config.mjs — share previews need full URLs
+const pageUrl = new URL("/", Astro.site).href;
+const shareImage = new URL("/og.jpg", Astro.site).href;
+
 // The About letter is an A4 sheet folded in three. Each panel is a slice of
 // the same sheet, given as fractions of its height — the creases sit where
 // Figma 967:595 draws them, 236px and 443px down a 679px sheet, so the
@@ -62,13 +69,28 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="A curated list of communities and activities in Chennai to help you find your people."
-    />
-    <title>Not home. Not work. But the secret third thing.</title>
+    <meta name="description" content={siteDescription} />
+    <title>{siteTitle}</title>
     <meta name="theme-color" content="#3D4013" />
+
+    <!-- Share preview: the hero as it first appears at 1200 × 630 -->
+    <link rel="canonical" href={pageUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:site_name" content="Somewhere in Chennai" />
+    <meta property="og:title" content={siteTitle} />
+    <meta property="og:description" content={siteDescription} />
+    <meta property="og:image" content={shareImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Not home. Not work. But the secret third thing. A directory of communities and activities in Chennai." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={siteTitle} />
+    <meta name="twitter:description" content={siteDescription} />
+    <meta name="twitter:image" content={shareImage} />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
 
   <body>
