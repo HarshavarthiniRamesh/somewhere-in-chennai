@@ -9,7 +9,7 @@ const siteDescription =
   "A curated list of communities and activities in Chennai to help you find your people.";
 // Absolute, from `site` in astro.config.mjs — share previews need full URLs
 const pageUrl = new URL("/", Astro.site).href;
-const shareImage = new URL("/og.jpg", Astro.site).href;
+const shareImage = new URL("/og.jpg?v=2", Astro.site).href;
 
 // The About letter is an A4 sheet folded in three. Each panel is a slice of
 // the same sheet, given as fractions of its height — the creases sit where

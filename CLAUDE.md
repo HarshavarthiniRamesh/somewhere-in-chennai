@@ -433,11 +433,15 @@ make them refetch.
 ## Share preview
 
 `public/og.jpg` is the link-preview image (`og:image`, Twitter
-`summary_large_image`): the page as it first loads in a 1200 × 630 window,
-captured at 2× in headless Chrome and scaled down, dev toolbar removed.
-It's a screenshot, so it goes stale when the hero, pills or palette
-change — recapture it then. A hero-only version (pills and table hidden)
-was tried and was mostly empty olive. The tags need absolute URLs, built
+`summary_large_image`), 1200 × 630: Harsha's Figma frame `1091:17` —
+title, tagline and the branch on the olive, nothing else — exported and
+saved as JPEG (2026-10-25). It replaced a screenshot of the live page,
+which also caught the pills and the first table row. Re-export it from
+that frame if the hero changes, and bump the `?v=` on `shareImage` in the
+page frontmatter: apps cache preview images by URL. They cache the page's
+preview too, so a link shared before a change can keep the old preview
+for a while (Facebook's Sharing Debugger forces a refresh; sharing with
+`?v=1` appended shows a fresh one). The tags need absolute URLs, built
 from `site` in `astro.config.mjs` (`https://nothome-notwork.vercel.app`);
 change that if the site lives elsewhere.
 
