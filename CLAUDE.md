@@ -418,7 +418,9 @@ ask, but one can't be recoloured to the palette and differs per platform,
 so it's drawn. `favicon.ico` (16/32/48, olive petals, for browsers without
 SVG icons) is rasterised from the SVG; `apple-touch-icon.png` keeps the
 olive tile, because iOS fills a transparent home-screen icon with black.
-Regenerate them if the SVG changes.
+Regenerate them if the SVG changes, and bump the `?v=` on the three icon
+links in the head: browsers cache favicons hard, and a new URL is the only
+reliable way to make them refetch.
 
 ## Share preview
 
