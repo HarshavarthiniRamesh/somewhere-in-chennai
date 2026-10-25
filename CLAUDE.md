@@ -21,7 +21,8 @@ Requires Node >= 22.12.0.
 ## Shape of the project
 
 Deliberately minimal — three files hold everything. There is no components
-directory and no UI framework. Keep it that way unless Harsha asks otherwise.
+directory and no UI framework (the one dependency beyond Astro and the fonts
+is `@vercel/analytics`). Keep it that way unless Harsha asks otherwise.
 
 | File | Holds |
 | :--- | :--- |
@@ -444,6 +445,17 @@ for a while (Facebook's Sharing Debugger forces a refresh; sharing with
 `?v=1` appended shows a fresh one). The tags need absolute URLs, built
 from `site` in `astro.config.mjs` (`https://nothome-notwork.vercel.app`);
 change that if the site lives elsewhere.
+
+## Analytics
+
+Vercel Web Analytics (2026-10-25), enabled in the Vercel dashboard for the
+`nothome-notwork` project: the `@vercel/analytics` package and its
+`<Analytics />` Astro component at the end of `<body>`. It counts page views,
+visitors, referrers, countries and devices, with no cookies, so there's no
+consent banner. It only reports from the Vercel deployment, not the dev
+server. Custom events (which community rows or filters get clicked) need
+Vercel's paid Pro plan; a free service such as Umami or GoatCounter is the
+option if those are ever wanted.
 
 ## Current state
 

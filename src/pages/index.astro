@@ -3,6 +3,7 @@ import { execSync } from "node:child_process";
 import { statSync } from "node:fs";
 import { communities, filterCategories, entryOptions } from "../data/communities.js";
 import "../styles/global.css";
+import Analytics from "@vercel/analytics/astro";
 
 const siteTitle = "Not home. Not work. But the secret third thing.";
 const siteDescription =
@@ -666,5 +667,8 @@ const updatedLabel = `${updated.getDate()} ${MONTHS[updated.getMonth()]}, ${upda
         }
       });
     </script>
+
+    <!-- Vercel Web Analytics: page views and visitors, no cookies -->
+    <Analytics />
   </body>
 </html>
