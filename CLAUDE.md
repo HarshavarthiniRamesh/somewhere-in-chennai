@@ -485,3 +485,32 @@ option if those are ever wanted.
   match that style when adding a section.
 - Two-space indentation throughout.
 - Links go to Instagram profiles; rows open them in a new tab with `noopener`.
+
+## Working on this project
+
+Notes for picking the work up in a new session or account.
+
+- **Design source:** Harsha's Figma file `F1TZvN8tYfTpfXTy5VcPjb`. Node IDs
+  quoted in this file (`846:2`, `1091:17` …) are frames in it. Follow the
+  design, keep structure and interactions unchanged, and don't add things
+  that weren't asked for.
+- **Live site:** https://nothome-notwork.vercel.app/ (Vercel project
+  `nothome-notwork`), auto-deployed from `main` of the private repo
+  `github.com/HarshavarthiniRamesh/somewhere-in-chennai`, live 15–30s after
+  a push. Harsha usually tests on the live site, so changes are expected to
+  be pushed once they're done.
+- **Pushing:** the machine's default gh account (`harshavarthini-r`) can't
+  see the repo. Run `gh auth switch -u HarshavarthiniRamesh`, push, then
+  `gh auth switch -u harshavarthini-r`.
+- **Testing:** headless Chrome over the DevTools protocol against
+  `npm run dev` or `npm run preview`. Headless Chrome on a Mac uses overlay
+  scrollbars; inject a `::-webkit-scrollbar { width: 15px }` style to test
+  anything that depends on scrollbar width.
+- **Parked:** the hover photo card is on branch `row-photo-preview`, waiting
+  until every community agrees to have its photo shown.
+- **Open questions:**
+  - `Marketing` is in `filterCategories` but no entry has it, so that pill
+    shows an empty list. Keep it, or drop it?
+  - On X, the link preview card didn't show in the post composer, though
+    the tags check out. Harsha was going to test it by sharing the link in
+    a DM.
