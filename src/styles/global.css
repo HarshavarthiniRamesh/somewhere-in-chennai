@@ -83,6 +83,12 @@ html {
 
 html {
   height: 100%;
+  /* Always keep the scrollbar. A short filter (Film) fits on one screen and
+     dropped it, a long one brought it back, and the whole page shifted
+     sideways by its width on every switch. scrollbar-gutter: stable didn't
+     hold the space when tested; this does. Invisible with overlay
+     scrollbars (a trackpad-only Mac), where nothing shifted anyway. */
+  overflow-y: scroll;
 }
 
 body {

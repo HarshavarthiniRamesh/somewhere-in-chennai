@@ -258,7 +258,12 @@ the layer sits at `z-index: -1` under `body`, the page colour lives on
 shows in the gap Chrome reveals when you pull past the top on a trackpad,
 and the page reads as olive plus grain, which averages `#40421D` on screen.
 Plain `--bg` there showed as a flat, darker band. It's also inlined in the
-head so a reload has it from the first frame. The footer is a fixed 49px and sits at the
+head so a reload has it from the first frame. `html` also sets `overflow-y: scroll`, so the
+scrollbar never comes and goes: a short filter (Film) fits on one screen,
+and switching to and from it shifted the whole page by the scrollbar's
+width wherever scrollbars take space (a mouse attached, or Windows).
+`scrollbar-gutter: stable` was tried first and didn't hold the space in
+testing. The footer is a fixed 49px and sits at the
 bottom of the page or of the screen, whichever is lower.
 
 This replaced the yellow-to-blue hero gradient: a WebGL band with Figma's
