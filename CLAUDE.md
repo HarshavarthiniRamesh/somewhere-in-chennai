@@ -490,6 +490,11 @@ option if those are ever wanted.
 
 Notes for picking the work up in a new session or account.
 
+The whole conversation that built the site, Harsha's messages and Claude's
+replies without the tool output, is in `docs/conversation-log.md`. Read it
+when a past decision needs more context than this file gives; this file
+wins where they differ, since it's kept current.
+
 - **Design source:** Harsha's Figma file `F1TZvN8tYfTpfXTy5VcPjb`. Node IDs
   quoted in this file (`846:2`, `1091:17` …) are frames in it. Follow the
   design, keep structure and interactions unchanged, and don't add things
